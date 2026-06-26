@@ -458,7 +458,7 @@ const CHART_COLORS = [
   "#be123c", // Crimson Rose
   "#475569", // Steel Slate
   "#881337", // Plum Wine
-  "#0369a1", // Slate Blue
+  "#010a0eff", // Slate Blue
 ];
 
 function Dashboard({
