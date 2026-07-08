@@ -15,6 +15,7 @@ import {
 
 import { authService } from "../services/authService";
 import Login from "./Login";
+import { Skeleton } from "./components/ui/skeleton";
 
 type TransactionType = "credit" | "debit";
 
@@ -906,6 +907,117 @@ function Dashboard({
   );
 }
 
+function DashboardSkeleton() {
+  return (
+    <div className="p-6 space-y-6 w-full animate-pulse">
+      {/* Page title skeleton */}
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-48 rounded-lg" />
+        <Skeleton className="h-4 w-72 rounded-lg" />
+      </div>
+
+      {/* KPI Cards skeleton */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="bg-white rounded-xl sm:rounded-2xl border border-border p-3 sm:p-5 flex flex-col gap-3">
+            <Skeleton className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-5 w-28" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Company Balances skeleton */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-36 rounded-lg" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="bg-white rounded-xl sm:rounded-2xl border border-border p-3 sm:p-5 flex flex-col gap-3">
+              <Skeleton className="w-8 h-8 rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-4.5 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Transfers Log skeleton */}
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-44 rounded-lg" />
+        <div className="bg-white rounded-xl border border-border p-4 space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-8 h-8 rounded-lg" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3.5 w-36" />
+                  <Skeleton className="h-2.5 w-24" />
+                </div>
+              </div>
+              <Skeleton className="h-4 w-16" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AccountDetailsSkeleton() {
+  return (
+    <div className="p-6 space-y-5 w-full animate-pulse">
+      {/* Header skeleton */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="w-10 h-10 rounded-xl" />
+          <div className="space-y-1.5">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-3.5 w-24" />
+          </div>
+        </div>
+        <Skeleton className="h-9 w-28 rounded-lg" />
+      </div>
+
+      {/* Balance Cards skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="bg-white rounded-xl border border-border p-4 flex flex-col gap-3">
+            <Skeleton className="h-3 w-24" />
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-2.5 w-20" />
+          </div>
+        ))}
+      </div>
+
+      {/* Transactions Table skeleton */}
+      <div className="bg-white rounded-xl border border-border overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex justify-between items-center">
+          <Skeleton className="h-4.5 w-36" />
+          <Skeleton className="h-3.5 w-16" />
+        </div>
+        <div className="p-5 space-y-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="flex justify-between items-center py-2 border-b border-border/50 last:border-0">
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-4 w-1/3" />
+                <Skeleton className="h-2.5 w-1/4" />
+              </div>
+              <div className="flex gap-4">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-16" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!authService.getCurrentUser());
@@ -1208,30 +1320,44 @@ export default function App() {
           </div>
 
           <nav className="py-2 flex-shrink-0">
-            {accounts.filter(a => a.type === "company").map(acc => {
-              const closing = calcBalance(acc);
-              const isActive = activeTab === acc.id;
-              return (
-                <button
-                  key={acc.id}
-                  onClick={() => setActiveTab(acc.id)}
-                  className={`w-full text-left px-4 py-3 flex items-center justify-between gap-2 transition-all group ${
-                    isActive ? "bg-secondary border-r-2 border-r-accent" : "hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: acc.bgColor }}>
-                      <Building2 size={13} style={{ color: acc.color }} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className={`text-xs font-semibold truncate ${isActive ? "text-accent" : "text-foreground"}`}>{acc.name}</div>
-                      <div className={`text-xs font-mono mt-0.5 ${closing < 0 ? "text-red-500" : "text-emerald-600"}`}>{fmtSign(closing)}</div>
+            {loading ? (
+              <div className="px-4 py-2 space-y-3">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Skeleton className="w-7 h-7 rounded-md" />
+                    <div className="flex-1 space-y-1">
+                      <Skeleton className="h-2.5 w-2/3" />
+                      <Skeleton className="h-2 w-1/2" />
                     </div>
                   </div>
-                  <ChevronRight size={12} className={`flex-shrink-0 text-muted-foreground transition-transform ${isActive ? "rotate-90 text-accent" : ""}`} />
-                </button>
-              );
-            })}
+                ))}
+              </div>
+            ) : (
+              accounts.filter(a => a.type === "company").map(acc => {
+                const closing = calcBalance(acc);
+                const isActive = activeTab === acc.id;
+                return (
+                  <button
+                    key={acc.id}
+                    onClick={() => setActiveTab(acc.id)}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between gap-2 transition-all group ${
+                      isActive ? "bg-secondary border-r-2 border-r-accent" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: acc.bgColor }}>
+                        <Building2 size={13} style={{ color: acc.color }} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-xs font-semibold truncate ${isActive ? "text-accent" : "text-foreground"}`}>{acc.name}</div>
+                        <div className={`text-xs font-mono mt-0.5 ${closing < 0 ? "text-red-500" : "text-emerald-600"}`}>{fmtSign(closing)}</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={12} className={`flex-shrink-0 text-muted-foreground transition-transform ${isActive ? "rotate-90 text-accent" : ""}`} />
+                  </button>
+                );
+              })
+            )}
           </nav>
 
           <div className="px-4 py-2 border-y border-border flex items-center justify-between bg-gray-50/50">
@@ -1249,30 +1375,44 @@ export default function App() {
           </div>
 
           <nav className="flex-1 py-2 overflow-y-auto">
-            {accounts.filter(a => a.type === "overdraft").map(acc => {
-              const closing = calcBalance(acc);
-              const isActive = activeTab === acc.id;
-              return (
-                <button
-                  key={acc.id}
-                  onClick={() => setActiveTab(acc.id)}
-                  className={`w-full text-left px-4 py-3 flex items-center justify-between gap-2 transition-all group ${
-                    isActive ? "bg-secondary border-r-2 border-r-accent" : "hover:bg-gray-50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: acc.bgColor }}>
-                      <CreditCard size={13} style={{ color: acc.color }} />
-                    </div>
-                    <div className="min-w-0">
-                      <div className={`text-xs font-semibold truncate ${isActive ? "text-accent" : "text-foreground"}`}>{acc.name}</div>
-                      <div className={`text-xs font-mono mt-0.5 ${closing < 0 ? "text-red-500" : "text-emerald-600"}`}>{fmtSign(closing)}</div>
+            {loading ? (
+              <div className="px-4 py-2 space-y-3">
+                {[1, 2].map(i => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Skeleton className="w-7 h-7 rounded-md" />
+                    <div className="flex-1 space-y-1">
+                      <Skeleton className="h-2.5 w-2/3" />
+                      <Skeleton className="h-2 w-1/2" />
                     </div>
                   </div>
-                  <ChevronRight size={12} className={`flex-shrink-0 text-muted-foreground transition-transform ${isActive ? "rotate-90 text-accent" : ""}`} />
-                </button>
-              );
-            })}
+                ))}
+              </div>
+            ) : (
+              accounts.filter(a => a.type === "overdraft").map(acc => {
+                const closing = calcBalance(acc);
+                const isActive = activeTab === acc.id;
+                return (
+                  <button
+                    key={acc.id}
+                    onClick={() => setActiveTab(acc.id)}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between gap-2 transition-all group ${
+                      isActive ? "bg-secondary border-r-2 border-r-accent" : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: acc.bgColor }}>
+                        <CreditCard size={13} style={{ color: acc.color }} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className={`text-xs font-semibold truncate ${isActive ? "text-accent" : "text-foreground"}`}>{acc.name}</div>
+                        <div className={`text-xs font-mono mt-0.5 ${closing < 0 ? "text-red-500" : "text-emerald-600"}`}>{fmtSign(closing)}</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={12} className={`flex-shrink-0 text-muted-foreground transition-transform ${isActive ? "rotate-90 text-accent" : ""}`} />
+                  </button>
+                );
+              })
+            )}
           </nav>
 
 
@@ -1290,7 +1430,13 @@ export default function App() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
-          {activeTab === "dashboard" ? (
+          {loading ? (
+            activeTab === "dashboard" ? (
+              <DashboardSkeleton />
+            ) : (
+              <AccountDetailsSkeleton />
+            )
+          ) : activeTab === "dashboard" ? (
             <Dashboard accounts={accounts} onNavigate={setActiveTab} />
           ) : activeAccount ? (
             <div className="p-6 space-y-5 w-full">
