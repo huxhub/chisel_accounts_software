@@ -99,6 +99,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
             </div>
           </form>
 
+          {/* Or / Register toggle — commented out (registration is invite-only)
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -118,6 +119,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
               </button>
             </div>
           </div>
+          */}
         </div>
       </div>
     </div>
