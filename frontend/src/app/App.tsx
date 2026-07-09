@@ -465,10 +465,41 @@ const CHART_COLORS = [
 function Dashboard({
   accounts,
   onNavigate,
+  onAddTransaction,
 }: {
   accounts: Account[];
   onNavigate: (id: string) => void;
+  onAddTransaction: (accountId: string, transaction: any) => void;
 }) {
+  const [showSalaryModal, setShowSalaryModal] = useState(false);
+  const [salaryAccountId, setSalaryAccountId] = useState(accounts[0]?.id || "");
+  const [salaryAmount, setSalaryAmount] = useState("");
+  const [salaryDate, setSalaryDate] = useState("");
+  const [salaryDescription, setSalaryDescription] = useState("Salary Payment");
+
+  // Keep salaryAccountId in sync with accounts if initially empty
+  useEffect(() => {
+    if (accounts.length > 0 && !salaryAccountId) {
+      setSalaryAccountId(accounts[0].id);
+    }
+  }, [accounts, salaryAccountId]);
+
+  const saveSalaryReminder = () => {
+    if (!salaryAccountId || !salaryAmount || !salaryDate) return;
+    const tx = {
+      date: new Date().toISOString().split('T')[0],
+      description: salaryDescription || "Salary Payment",
+      type: "debit" as const,
+      amount: parseFloat(salaryAmount),
+      dueDate: salaryDate,
+    };
+    onAddTransaction(salaryAccountId, tx);
+    setSalaryAmount("");
+    setSalaryDate("");
+    setSalaryDescription("Salary Payment");
+    setShowSalaryModal(false);
+  };
+
   const totalOpening = accounts.reduce((s, a) => s + a.openingBalance, 0);
   const totalCredit = accounts.reduce((s, a) => s + calcTotalCredit(a), 0);
   const totalDebit = accounts.reduce((s, a) => s + calcTotalDebit(a), 0);
@@ -569,6 +600,21 @@ function Dashboard({
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   }, [accounts]);
 
+  const dueOrOverdueReminders = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return reminders.filter((r: any) => r.dueDate <= todayStr);
+  }, [reminders]);
+
+  const overdueCount = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return dueOrOverdueReminders.filter((r: any) => r.dueDate < todayStr).length;
+  }, [dueOrOverdueReminders]);
+
+  const dueTodayCount = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return dueOrOverdueReminders.filter((r: any) => r.dueDate === todayStr).length;
+  }, [dueOrOverdueReminders]);
+
   const kpis = [
     {
       label: "Opening Balance",
@@ -610,13 +656,59 @@ function Dashboard({
 
   return (
     <div className="p-6 space-y-6 w-full">
-      {/* Page title */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Overview of all accounts — {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
-        </p>
+      {/* Page title & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Dashboard</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Overview of all accounts — {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            if (accounts.length === 0) {
+              alert("Please add a company first before setting a reminder!");
+              return;
+            }
+            setShowSalaryModal(true);
+          }}
+          className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Bell size={16} className="animate-swing" />
+          Set Salary Reminder
+        </button>
       </div>
+
+      {/* Top Alert Banner for Due Today & Overdue Reminders */}
+      {dueOrOverdueReminders.length > 0 && (
+        <div className="bg-gradient-to-r from-red-600 to-rose-700 rounded-2xl p-4 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-pulse">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white flex-shrink-0">
+              <Bell size={20} className="animate-swing" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm">
+                {overdueCount > 0 ? "Overdue / Due Today Reminders Alert!" : "Salary & Payment Reminders Due Today!"}
+              </h4>
+              <p className="text-xs text-white/95 mt-0.5">
+                {overdueCount > 0 ? (
+                  `You have ${overdueCount} overdue payment(s) and ${dueTodayCount} due today.`
+                ) : (
+                  `You have ${dueTodayCount} reminder(s) scheduled for today.`
+                )}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              document.getElementById("reminders-section")?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="bg-white text-red-700 hover:bg-red-50 px-4 py-2 rounded-xl text-xs font-bold transition-all self-start sm:self-center shadow-sm"
+          >
+            View Reminders
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -1003,6 +1095,108 @@ function Dashboard({
           </div>
         </div>
       </div>
+      {/* Set Salary Reminder Modal */}
+      {showSalaryModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-border">
+            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-red-50/20">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
+                  <Bell size={16} />
+                </div>
+                <h3 className="font-bold text-base text-foreground">Set Salary Reminder</h3>
+              </div>
+              <button 
+                onClick={() => setShowSalaryModal(false)} 
+                className="text-muted-foreground hover:bg-gray-100 p-1.5 rounded-lg transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                  Select Company / Account
+                </label>
+                <select
+                  value={salaryAccountId}
+                  onChange={e => setSalaryAccountId(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 bg-gray-50 text-foreground"
+                >
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} ({acc.type === "company" ? "Company" : "Overdraft"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                  Reminder Title / Description
+                </label>
+                <input
+                  type="text"
+                  value={salaryDescription}
+                  onChange={e => setSalaryDescription(e.target.value)}
+                  placeholder="e.g. Monthly Staff Salary, Staff Wages..."
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 bg-gray-50 text-foreground"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                    Salary Date (Due)
+                  </label>
+                  <input
+                    type="date"
+                    value={salaryDate}
+                    onChange={e => setSalaryDate(e.target.value)}
+                    required
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 bg-gray-50 font-mono text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                    Amount (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-sm">₹</span>
+                    <input
+                      type="number"
+                      value={salaryAmount}
+                      onChange={e => setSalaryAmount(e.target.value)}
+                      placeholder="0.00"
+                      required
+                      min="0"
+                      step="0.01"
+                      className="w-full border border-border rounded-lg pl-7 pr-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/20 bg-gray-50 text-foreground"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 border-t border-border flex justify-end gap-3">
+              <button 
+                onClick={() => setShowSalaryModal(false)} 
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={saveSalaryReminder}
+                disabled={!salaryAccountId || !salaryAmount || !salaryDate}
+                className="px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+              >
+                Save Salary Reminder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1605,7 +1799,7 @@ export default function App() {
               <AccountDetailsSkeleton />
             )
           ) : activeTab === "dashboard" ? (
-            <Dashboard accounts={accounts} onNavigate={setActiveTab} />
+            <Dashboard accounts={accounts} onNavigate={setActiveTab} onAddTransaction={handleAddTx} />
           ) : activeAccount ? (
             <div className="p-6 space-y-5 w-full">
               {/* Account Header */}
