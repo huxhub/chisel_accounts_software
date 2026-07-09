@@ -1,5 +1,5 @@
 const API_URL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-  ? 'http://localhost:5000/api/auth'
+  ? 'http://localhost:5002/api/auth'
   : 'https://brandswamy.onrender.com/api/auth';
 
 export const authService = {
