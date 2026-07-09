@@ -668,7 +668,7 @@ function Dashboard({
           }}
           className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          <Bell size={16} className="animate-swing" />
+          <Bell size={16} />
           Set Reminder
         </button>
       </div>
@@ -725,10 +725,6 @@ function Dashboard({
                   </div>
                   
                   <div className="flex items-center gap-3 flex-shrink-0 text-[10px] text-muted-foreground self-end sm:self-auto font-mono">
-                    <span className="flex items-center gap-1 bg-white border border-gray-200 px-2 py-0.5 rounded-md font-sans">
-                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: rem.accountColor }} />
-                      {rem.accountName}
-                    </span>
                     <span className="flex items-center gap-1">
                       <FileText size={10} />
                       {rem.dueDate.split("-").reverse().join("/")}
