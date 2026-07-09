@@ -2,7 +2,7 @@ import { authService } from './authService';
 
 const API_URL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000/api/accounts'
-  : 'https://gray-louse-737394.hostingersite.com/api/accounts';
+  : 'https://brandswamy.onrender.com/api/accounts';
 
 const getAuthHeaders = (): Record<string, string> => {
   const user = authService.getCurrentUser();
