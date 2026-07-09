@@ -29,11 +29,26 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 to-blue-50/50">
+    <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 to-red-50/30">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="w-16 h-16 bg-gradient-to-tr from-accent to-blue-500 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <Activity size={32} className="text-white" />
+          <div className="w-16 h-16 bg-gradient-to-tr from-accent to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20">
+            <svg
+              viewBox="0 0 100 100"
+              className="w-10 h-10 text-white fill-none stroke-current"
+              strokeWidth="5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              {/* Outer Gopuram arch */}
+              <path d="M22 80 C22 68, 30 66, 30 54 C30 42, 38 40, 38 28 C38 18, 45 14, 50 14 C55 14, 62 18, 62 28 C62 40, 70 42, 70 54 C70 66, 78 68, 78 80" />
+              {/* Middle Gopuram arch */}
+              <path d="M34 80 C34 71, 40 69, 40 59 C40 49, 45 47, 45 37 C45 32, 48 29, 50 29 C52 29, 55 32, 55 37 C55 49, 60 49, 60 59 C60 69, 66 71, 66 80" strokeWidth="3.5" />
+              {/* Inner Gopuram arch */}
+              <path d="M46 80 C46 74, 50 71, 50 63 C50 71, 54 74, 54 80" strokeWidth="2.5" />
+              {/* Center dot */}
+              <circle cx="50" cy="50" r="4.0" className="fill-current stroke-none" />
+            </svg>
           </div>
         </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900 tracking-tight">
@@ -91,7 +106,7 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-accent hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed group"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-accent hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-all hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed group"
               >
                 {loading ? 'Processing...' : (isLogin ? 'Sign in' : 'Create account')}
                 {!loading && <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />}

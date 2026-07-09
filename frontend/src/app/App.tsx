@@ -1232,13 +1232,31 @@ export default function App() {
           >
             <Menu size={20} />
           </button>
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-white/15 flex items-center justify-center">
-            <BarChart3 size={18} className="sm:hidden" />
-            <BarChart3 size={20} className="hidden sm:block" />
-          </div>
-          <div>
-            <h1 className="text-base sm:text-lg font-bold tracking-tight leading-none">Accounts Manager</h1>
-            <p className="text-[10px] sm:text-xs text-white/60 mt-0.5">Multi-Company Accounting System</p>
+          
+          <svg
+            viewBox="0 0 100 100"
+            className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-none stroke-current"
+            strokeWidth="4.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {/* Outer Gopuram arch */}
+            <path d="M22 80 C22 68, 30 66, 30 54 C30 42, 38 40, 38 28 C38 18, 45 14, 50 14 C55 14, 62 18, 62 28 C62 40, 70 42, 70 54 C70 66, 78 68, 78 80" />
+            {/* Middle Gopuram arch */}
+            <path d="M34 80 C34 71, 40 69, 40 59 C40 49, 45 47, 45 37 C45 32, 48 29, 50 29 C52 29, 55 32, 55 37 C55 49, 60 49, 60 59 C60 69, 66 71, 66 80" strokeWidth="3.2" />
+            {/* Inner Gopuram arch */}
+            <path d="M46 80 C46 74, 50 71, 50 63 C50 71, 54 74, 54 80" strokeWidth="2.2" />
+            {/* Center dot */}
+            <circle cx="50" cy="50" r="3.5" className="fill-current stroke-none" />
+          </svg>
+          
+          <div className="flex flex-col">
+            <span className="text-base sm:text-lg font-bold tracking-wider text-white leading-none font-sans">
+              BRAND SWAMY
+            </span>
+            <span className="text-[9px] sm:text-[10px] text-white/70 mt-0.5 tracking-wider font-semibold">
+              Accounts Manager
+            </span>
           </div>
         </div>
         <div className="flex items-center justify-between w-full sm:w-auto gap-3">
@@ -1296,7 +1314,7 @@ export default function App() {
               onClick={() => setActiveTab("dashboard")}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === "dashboard"
-                  ? "bg-accent text-white"
+                  ? "bg-secondary text-accent border-l-2 border-l-accent pl-2.5"
                   : "text-muted-foreground hover:bg-gray-50 hover:text-foreground"
               }`}
             >
