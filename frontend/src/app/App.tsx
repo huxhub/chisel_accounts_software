@@ -675,52 +675,72 @@ function Dashboard({
 
       {/* Top Alert Banner for Due Today & Overdue Reminders */}
       {dueOrOverdueReminders.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-2xl p-5 text-foreground shadow-sm flex flex-col gap-3">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center text-red-600 flex-shrink-0 mt-0.5">
-              <Bell size={18} />
-            </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-sm text-red-800">Reminder Notes</h4>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                The following reminders have hit their scheduled date:
-              </p>
-              
-              <div className="mt-3 space-y-2.5">
-                {dueOrOverdueReminders.map((rem: any) => {
-                  const todayStr = new Date().toISOString().split('T')[0];
-                  const isOverdue = rem.dueDate < todayStr;
-                  
-                  // Calculate difference in days
-                  const diffTime = new Date(rem.dueDate).getTime() - new Date(todayStr).getTime();
-                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                  
-                  let statusText = "";
-                  let statusColorClass = "";
-                  if (isOverdue) {
-                    statusText = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''}`;
-                    statusColorClass = "bg-rose-100 text-rose-800 border-rose-200";
-                  } else {
-                    statusText = "Due Today";
-                    statusColorClass = "bg-amber-100 text-amber-800 border-amber-200 font-semibold";
-                  }
-                  
-                  return (
-                    <div key={rem.id} className="flex items-start justify-between gap-3 p-3 bg-white rounded-xl border border-red-100/80 shadow-2xs">
-                      <div className="space-y-1">
-                        <div className="text-xs font-bold text-gray-800">{rem.description}</div>
-                        <div className="text-[10px] text-muted-foreground font-mono">
-                          Date: {rem.dueDate.split("-").reverse().join("/")}
-                        </div>
-                      </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusColorClass} flex-shrink-0`}>
-                        {statusText}
-                      </span>
-                    </div>
-                  );
-                })}
+        <div className="bg-white border border-border border-l-4 border-l-red-600 rounded-2xl p-6 shadow-xs flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center text-red-600 flex-shrink-0">
+                <Bell size={18} />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-gray-900">Active Reminders</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  The following tasks have hit their scheduled date:
+                </p>
               </div>
             </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dueOrOverdueReminders.map((rem: any) => {
+              const todayStr = new Date().toISOString().split('T')[0];
+              const isOverdue = rem.dueDate < todayStr;
+              
+              // Calculate difference in days
+              const diffTime = new Date(rem.dueDate).getTime() - new Date(todayStr).getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              
+              let statusText = "";
+              let statusColorClass = "";
+              let accentBarClass = "";
+              if (isOverdue) {
+                statusText = `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) > 1 ? 's' : ''}`;
+                statusColorClass = "bg-rose-50 text-rose-700 border-rose-100";
+                accentBarClass = "border-l-rose-500";
+              } else {
+                statusText = "Due Today";
+                statusColorClass = "bg-amber-50 text-amber-800 border-amber-100 font-semibold";
+                accentBarClass = "border-l-amber-500";
+              }
+              
+              return (
+                <div 
+                  key={rem.id} 
+                  className={`flex flex-col justify-between gap-3 p-4 bg-gray-50/50 rounded-xl border border-gray-150 border-l-4 ${accentBarClass} hover:bg-gray-50 transition-colors shadow-2xs`}
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusColorClass} font-medium`}>
+                        {statusText}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-mono flex items-center gap-1">
+                        <FileText size={10} />
+                        {rem.dueDate.split("-").reverse().join("/")}
+                      </span>
+                    </div>
+                    <div className="text-sm font-semibold text-gray-800 line-clamp-2 leading-relaxed" title={rem.description}>
+                      {rem.description}
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t border-gray-200/50 flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                      <Building2 size={11} style={{ color: rem.accountColor }} />
+                      {rem.accountName}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
