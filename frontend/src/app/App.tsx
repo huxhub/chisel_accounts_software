@@ -1434,9 +1434,7 @@ function RemindersPage({
                       <td className="px-4 py-3.5 text-center">
                         <button
                           onClick={() => {
-                            if (confirm("Are you sure you want to delete this reminder?")) {
-                              onDeleteTransaction(rem.accountId, rem.id);
-                            }
+                            onDeleteTransaction(rem.accountId, rem.id);
                           }}
                           className="text-muted-foreground hover:text-red-500 transition-colors"
                           title="Delete Reminder"
@@ -1621,6 +1619,8 @@ export default function App() {
   const [nameInput, setNameInput] = useState("");
   const [viewDoc, setViewDoc] = useState<AttachedDoc | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showDeleteTxDialog, setShowDeleteTxDialog] = useState(false);
+  const [txToDelete, setTxToDelete] = useState<{ accountId: string, txId: string } | null>(null);
   const [deleteConfirmPassword, setDeleteConfirmPassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deleteAccountId, setDeleteAccountId] = useState<string | null>(null);
@@ -1809,8 +1809,11 @@ export default function App() {
     }
   };
 
-  const deleteTransaction = (txId: string) => {
-    handleDelTx(activeTab, txId);
+  const deleteTransaction = (accountIdOrTxId: string, maybeTxId?: string) => {
+    const accountId = maybeTxId ? accountIdOrTxId : activeTab;
+    const txId = maybeTxId ? maybeTxId : accountIdOrTxId;
+    setTxToDelete({ accountId, txId });
+    setShowDeleteTxDialog(true);
   };
 
   const handleExchangeSubmit = async () => {
@@ -2440,9 +2443,7 @@ export default function App() {
                             </span>
                             <button
                               onClick={() => {
-                                if (confirm("Are you sure you want to delete this reminder?")) {
-                                  handleDelTx(activeAccount.id, rem.id);
-                                }
+                                deleteTransaction(activeAccount.id, rem.id);
                               }}
                               className="text-muted-foreground hover:text-red-500 transition-colors ml-1"
                               title="Delete Reminder"
@@ -3723,6 +3724,54 @@ export default function App() {
               <button 
                 onClick={handleDeleteCompany} 
                 className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteTxDialog && txToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden flex flex-col max-h-[90vh] border border-border">
+            <div className="px-6 py-4 border-b border-border flex items-center gap-3 bg-red-50/20">
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600 flex-shrink-0">
+                <Trash2 size={16} />
+              </div>
+              <div>
+                <h3 className="font-bold text-base text-foreground">Confirm Deletion</h3>
+                <p className="text-xs text-muted-foreground">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Are you sure you want to delete this item? This will permanently remove it from the account ledgers and balance logs.
+              </p>
+            </div>
+
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteTxDialog(false);
+                  setTxToDelete(null);
+                }}
+                className="flex-1 py-2.5 rounded-lg border border-border text-sm font-semibold text-foreground hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (txToDelete) {
+                    handleDelTx(txToDelete.accountId, txToDelete.txId);
+                  }
+                  setShowDeleteTxDialog(false);
+                  setTxToDelete(null);
+                }}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-750 transition-colors shadow-sm"
               >
                 Confirm Delete
               </button>
