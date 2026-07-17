@@ -2412,7 +2412,7 @@ export default function App() {
       {/* Monthly Report Modal */}
       {showReport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.55)" }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-primary">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center">
@@ -2428,7 +2428,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 flex-1 overflow-y-auto">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Report Type</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -2645,7 +2645,7 @@ export default function App() {
       {/* Add Transaction Modal */}
       {showAddCompany && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-border flex items-center justify-between">
               <h3 className="font-semibold text-lg text-foreground">
                 {companyForm.type === "overdraft" ? "Add New Overdraft" : companyForm.type === "bank" ? "Add New Bank" : "Add New Company"}
@@ -2654,7 +2654,7 @@ export default function App() {
                 <X size={18} />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <label className="block text-xs font-medium text-foreground mb-1.5">Company Name</label>
                 <input
@@ -2704,7 +2704,7 @@ export default function App() {
 
       {showForm && activeAccount && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between px-6 py-4 border-b border-border" style={{ backgroundColor: activeAccount.bgColor }}>
               <div>
                 <h3 className="font-bold text-base" style={{ color: activeAccount.color }}>New Entry</h3>
@@ -2715,7 +2715,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Transaction Type</label>
                 <div className="grid grid-cols-2 gap-2">
@@ -2919,7 +2919,7 @@ export default function App() {
 
       {showExchange && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="px-6 py-4 border-b border-border bg-primary flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center">
@@ -2941,7 +2941,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
               {/* Transfer Category */}
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Transfer Between</label>
