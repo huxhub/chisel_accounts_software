@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import chiselLogo from "../assets/logo.png";
 import { useAccountsController } from "../controllers/useAccountsController";
 import {
   Plus, Trash2, TrendingUp, TrendingDown, BarChart3, Building2,
@@ -1380,7 +1381,7 @@ export default function App() {
     const defaults = {
       companyName: "CHISEL",
       companySubtitle: "Accounts Manager",
-      logoUrl: "",
+      logoUrl: chiselLogo,
       themeColor: "#c21818",
     };
     if (saved) {
@@ -1763,6 +1764,9 @@ export default function App() {
           {settings.logoUrl ? (
             <img src={settings.logoUrl} className="w-8 h-8 sm:w-9 sm:h-9 object-contain bg-white/10 p-1 rounded-lg" alt="Logo" />
           ) : (
+            <img src={chiselLogo} className="w-8 h-8 sm:w-9 sm:h-9 object-contain bg-white/10 p-1 rounded-lg" alt="Logo" />
+          )}
+          {false && (
             <svg
               viewBox="0 0 100 100"
               className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-none stroke-current"
