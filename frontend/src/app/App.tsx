@@ -1437,7 +1437,7 @@ export default function App() {
   
   const [showExchange, setShowExchange] = useState(false);
   const [exchangeForm, setExchangeForm] = useState({
-    category: "company" as "company" | "bank" | "companyToBank",
+    category: "companyToBank" as "company" | "bank" | "companyToBank",
     // For "company"/"bank": the two accounts being transferred between.
     // For "companyToBank": the two BANK accounts the money actually moves through —
     // fromCompanyId/toCompanyId below are only used to label the transaction.
@@ -1798,12 +1798,13 @@ export default function App() {
           <button
             onClick={() => {
               const companyAccs = accounts.filter(a => a.type === "company");
+              const bankAccs = accounts.filter(a => a.type === "bank");
               setExchangeForm({
-                category: "company",
-                sourceId: companyAccs[0]?.id || "",
-                destId: companyAccs[1]?.id || "",
-                fromCompanyId: "",
-                toCompanyId: "",
+                category: "companyToBank",
+                fromCompanyId: companyAccs[0]?.id || "",
+                toCompanyId: companyAccs[1]?.id || "",
+                sourceId: bankAccs[0]?.id || "",
+                destId: bankAccs[1]?.id || "",
                 amount: "",
                 date: today,
                 dueDate: "",
@@ -3183,54 +3184,11 @@ export default function App() {
               {/* Transfer Category */}
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Transfer Between</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const companyAccs = accounts.filter(a => a.type === "company");
-                      setExchangeForm({ ...exchangeForm, category: "company", sourceId: companyAccs[0]?.id || "", destId: companyAccs[1]?.id || "", fromCompanyId: "", toCompanyId: "" });
-                    }}
-                    className={`py-2.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center gap-1 border-2 transition-all ${
-                      exchangeForm.category === "company" ? "bg-secondary border-accent text-accent" : "border-border text-muted-foreground hover:border-accent/30"
-                    }`}
-                  >
-                    <Building2 size={15} />
-                    Company ↔ Company
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const bankAccs = accounts.filter(a => a.type === "bank");
-                      setExchangeForm({ ...exchangeForm, category: "bank", sourceId: bankAccs[0]?.id || "", destId: bankAccs[1]?.id || "", fromCompanyId: "", toCompanyId: "" });
-                    }}
-                    className={`py-2.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center gap-1 border-2 transition-all ${
-                      exchangeForm.category === "bank" ? "bg-teal-50 border-teal-500 text-teal-700" : "border-border text-muted-foreground hover:border-teal-200"
-                    }`}
-                  >
-                    <Landmark size={15} />
-                    Bank ↔ Bank
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const companyAccs = accounts.filter(a => a.type === "company");
-                      const bankAccs = accounts.filter(a => a.type === "bank");
-                      setExchangeForm({
-                        ...exchangeForm,
-                        category: "companyToBank",
-                        fromCompanyId: companyAccs[0]?.id || "",
-                        toCompanyId: companyAccs[1]?.id || "",
-                        sourceId: bankAccs[0]?.id || "",
-                        destId: bankAccs[1]?.id || "",
-                      });
-                    }}
-                    className={`py-2.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center gap-1 border-2 transition-all ${
-                      exchangeForm.category === "companyToBank" ? "bg-indigo-50 border-indigo-500 text-indigo-700" : "border-border text-muted-foreground hover:border-indigo-200"
-                    }`}
-                  >
+                <div className="grid grid-cols-1">
+                  <div className="py-2.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center gap-1 border-2 border-indigo-500 bg-indigo-50 text-indigo-700">
                     <ArrowLeftRight size={15} />
                     Company → Bank
-                  </button>
+                  </div>
                 </div>
               </div>
 
