@@ -778,6 +778,15 @@ function Dashboard({
               );
             })}
           </div>
+          
+          <div className="flex justify-end border-t border-border pt-3">
+            <button
+              onClick={() => onNavigate("reminders")}
+              className="text-xs font-semibold text-red-650 hover:text-red-750 hover:underline flex items-center gap-1"
+            >
+              View All Reminders &rarr;
+            </button>
+          </div>
         </div>
       )}
 
@@ -1257,6 +1266,263 @@ function AccountDetailsSkeleton() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function RemindersPage({
+  accounts,
+  onNavigate,
+  onAddTransaction,
+  onDeleteTransaction,
+}: {
+  accounts: Account[];
+  onNavigate: (id: string) => void;
+  onAddTransaction: (accountId: string, transaction: any) => void;
+  onDeleteTransaction: (accountId: string, txId: string) => void;
+}) {
+  const [showReminderModal, setShowReminderModal] = useState(false);
+  const [reminderNote, setReminderNote] = useState("");
+  const [reminderDate, setReminderDate] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState(accounts[0]?.id || "");
+
+  const saveReminder = () => {
+    if (!selectedAccountId) {
+      toast.warning("Please select a company/account first!");
+      return;
+    }
+    if (!reminderNote || !reminderDate) {
+      toast.warning("Please fill in both the note and the date.");
+      return;
+    }
+    const tx = {
+      date: new Date().toISOString().split('T')[0],
+      description: reminderNote,
+      type: "debit" as const,
+      amount: 0,
+      dueDate: reminderDate,
+    };
+    onAddTransaction(selectedAccountId, tx);
+    setReminderNote("");
+    setReminderDate("");
+    setShowReminderModal(false);
+  };
+
+  const reminders = useMemo(() => {
+    const list: any[] = [];
+    accounts.forEach(a => {
+      a.transactions
+        .filter((tx: any) => tx.dueDate)
+        .forEach((tx: any) => {
+          list.push({
+            ...tx,
+            accountId: a.id,
+            accountName: a.name,
+            accountColor: a.color,
+            accountBg: a.bgColor,
+          });
+        });
+    });
+    return list.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  }, [accounts]);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  return (
+    <div className="p-6 space-y-6 w-full">
+      {/* Page Title & Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Reminders</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Manage your post-dated transactions and scheduled tasks.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            if (accounts.length === 0) {
+              toast.warning("Please add an account first before setting a reminder!");
+              return;
+            }
+            setShowReminderModal(true);
+          }}
+          className="flex items-center justify-center gap-2 bg-red-650 hover:bg-red-750 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Bell size={16} />
+          Set Reminder
+        </button>
+      </div>
+
+      {/* Reminders List Table */}
+      <div className="bg-white rounded-2xl border border-border shadow-xs overflow-hidden">
+        <div className="p-4 border-b border-border bg-gray-50/50 flex justify-between items-center">
+          <h3 className="font-semibold text-sm text-foreground">All Reminders List</h3>
+          <span className="text-xs bg-gray-105 text-muted-foreground font-mono font-bold px-2 py-0.5 rounded-full">
+            {reminders.length} total
+          </span>
+        </div>
+
+        {reminders.length === 0 ? (
+          <div className="py-16 text-center">
+            <Bell size={32} className="mx-auto text-muted-foreground/30 mb-3" />
+            <p className="text-sm font-medium text-muted-foreground">No reminders set yet</p>
+            <p className="text-xs text-muted-foreground/75 mt-1">Use the "Set Reminder" button to schedule a reminder.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50/50 border-b border-border text-xs text-muted-foreground uppercase tracking-wide">
+                  <th className="px-4 py-3 text-left font-semibold">Account / Ledger</th>
+                  <th className="px-4 py-3 text-left font-semibold">Date Created</th>
+                  <th className="px-4 py-3 text-left font-semibold">Due Date</th>
+                  <th className="px-4 py-3 text-left font-semibold">Description</th>
+                  <th className="px-4 py-3 text-right font-semibold">Amount</th>
+                  <th className="px-4 py-3 text-center font-semibold">Status</th>
+                  <th className="px-4 py-3 text-center w-12"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {reminders.map((rem: any) => {
+                  const isOverdue = rem.dueDate < todayStr;
+                  const isDueToday = rem.dueDate === todayStr;
+                  
+                  let statusLabel = "";
+                  let statusClass = "";
+                  if (isOverdue) {
+                    statusLabel = "Overdue";
+                    statusClass = "bg-red-50 text-red-755 border-red-100";
+                  } else if (isDueToday) {
+                    statusLabel = "Due Today";
+                    statusClass = "bg-amber-50 text-amber-800 border-amber-100";
+                  } else {
+                    statusLabel = "Upcoming";
+                    statusClass = "bg-blue-50 text-blue-755 border-blue-100";
+                  }
+
+                  return (
+                    <tr key={rem.id} className="border-b border-border/50 hover:bg-gray-50/50 transition-colors">
+                      <td className="px-4 py-3.5">
+                        <span 
+                          className="px-2 py-0.5 rounded text-xs font-semibold"
+                          style={{ backgroundColor: rem.accountBg, color: rem.accountColor }}
+                        >
+                          {rem.accountName}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-xs font-mono text-muted-foreground">
+                        {rem.date.split("-").reverse().join("/")}
+                      </td>
+                      <td className="px-4 py-3.5 text-xs font-mono font-bold text-foreground">
+                        {rem.dueDate.split("-").reverse().join("/")}
+                      </td>
+                      <td className="px-4 py-3.5 font-medium text-gray-800">
+                        {rem.description}
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-mono font-bold">
+                        {rem.amount > 0 ? `₹${parseFloat(rem.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}` : "—"}
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusClass} font-semibold`}>
+                          {statusLabel}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-center">
+                        <button
+                          onClick={() => {
+                            if (confirm("Are you sure you want to delete this reminder?")) {
+                              onDeleteTransaction(rem.accountId, rem.id);
+                            }
+                          }}
+                          className="text-muted-foreground hover:text-red-500 transition-colors"
+                          title="Delete Reminder"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Set Reminder Modal */}
+      {showReminderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-border bg-red-650 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center">
+                  <Bell size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-white">Create New Reminder</h3>
+                  <p className="text-xs text-red-100">Schedule an alert or reminder</p>
+                </div>
+              </div>
+              <button onClick={() => setShowReminderModal(false)} className="text-white/60 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 flex-1 overflow-y-auto">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Select Account</label>
+                <select
+                  value={selectedAccountId}
+                  onChange={e => setSelectedAccountId(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 bg-input-background"
+                >
+                  {accounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.name} ({acc.type})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Reminder Note</label>
+                <input
+                  type="text"
+                  value={reminderNote}
+                  onChange={e => setReminderNote(e.target.value)}
+                  placeholder="e.g. Pay rent, GST due date..."
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 bg-input-background font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Due Date</label>
+                <input
+                  type="date"
+                  value={reminderDate}
+                  onChange={e => setReminderDate(e.target.value)}
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 bg-input-background"
+                />
+              </div>
+            </div>
+
+            <div className="px-6 pb-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowReminderModal(false)}
+                className="flex-1 py-2.5 rounded-lg border border-border text-sm font-semibold text-foreground hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveReminder}
+                className="flex-1 py-2.5 rounded-lg bg-red-650 text-white text-sm font-semibold hover:bg-red-750 transition-colors"
+              >
+                Save Reminder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1763,9 +2029,12 @@ export default function App() {
         {/* Sidebar */}
         <aside className={`${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform duration-300 ease-in-out absolute md:relative z-30 h-full w-64 md:w-56 bg-white border-r border-border flex flex-col flex-shrink-0`}>
           {/* Dashboard link */}
-          <div className="px-4 py-3 border-b border-border">
+          <div className="px-4 py-3 border-b border-border flex flex-col gap-2">
             <button
-              onClick={() => setActiveTab("dashboard")}
+              onClick={() => {
+                setActiveTab("dashboard");
+                setMobileMenuOpen(false);
+              }}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
                 activeTab === "dashboard"
                   ? "bg-secondary text-accent border-l-2 border-l-accent pl-2.5"
@@ -1774,6 +2043,25 @@ export default function App() {
             >
               <LayoutDashboard size={15} />
               Dashboard
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("reminders");
+                setMobileMenuOpen(false);
+              }}
+              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === "reminders"
+                  ? "bg-secondary text-accent border-l-2 border-l-accent pl-2.5"
+                  : "text-muted-foreground hover:bg-gray-50 hover:text-foreground"
+              }`}
+            >
+              <Bell size={15} />
+              Reminders
+              {activeRemindersCount > 0 && (
+                <span className="ml-auto w-4 h-4 rounded-full bg-red-650 text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
+                  {activeRemindersCount}
+                </span>
+              )}
             </button>
           </div>
 
@@ -1975,6 +2263,13 @@ export default function App() {
             )
           ) : activeTab === "dashboard" ? (
             <Dashboard accounts={accounts} onNavigate={setActiveTab} onAddTransaction={handleAddTx} />
+          ) : activeTab === "reminders" ? (
+            <RemindersPage
+              accounts={accounts}
+              onNavigate={setActiveTab}
+              onAddTransaction={handleAddTx}
+              onDeleteTransaction={handleDelTx}
+            />
           ) : activeAccount ? (
             <div className="p-6 space-y-5 w-full">
               {/* Account Header */}
