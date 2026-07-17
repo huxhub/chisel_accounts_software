@@ -782,7 +782,7 @@ function Dashboard({
           <div className="flex justify-end border-t border-border pt-3">
             <button
               onClick={() => onNavigate("reminders")}
-              className="text-xs font-semibold text-red-650 hover:text-red-750 hover:underline flex items-center gap-1"
+              className="text-xs font-semibold text-red-600 hover:text-red-700 hover:underline flex items-center gap-1"
             >
               View All Reminders &rarr;
             </button>
@@ -1346,7 +1346,7 @@ function RemindersPage({
             }
             setShowReminderModal(true);
           }}
-          className="flex items-center justify-center gap-2 bg-red-650 hover:bg-red-750 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
+          className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
           <Bell size={16} />
           Set Reminder
@@ -1357,7 +1357,7 @@ function RemindersPage({
       <div className="bg-white rounded-2xl border border-border shadow-xs overflow-hidden">
         <div className="p-4 border-b border-border bg-gray-50/50 flex justify-between items-center">
           <h3 className="font-semibold text-sm text-foreground">All Reminders List</h3>
-          <span className="text-xs bg-gray-105 text-muted-foreground font-mono font-bold px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-gray-100 text-muted-foreground font-mono font-bold px-2 py-0.5 rounded-full">
             {reminders.length} total
           </span>
         </div>
@@ -1391,13 +1391,13 @@ function RemindersPage({
                   let statusClass = "";
                   if (isOverdue) {
                     statusLabel = "Overdue";
-                    statusClass = "bg-red-50 text-red-755 border-red-100";
+                    statusClass = "bg-red-50 text-red-700 border-red-100";
                   } else if (isDueToday) {
                     statusLabel = "Due Today";
                     statusClass = "bg-amber-50 text-amber-800 border-amber-100";
                   } else {
                     statusLabel = "Upcoming";
-                    statusClass = "bg-blue-50 text-blue-755 border-blue-100";
+                    statusClass = "bg-blue-50 text-blue-700 border-blue-100";
                   }
 
                   return (
@@ -1453,7 +1453,7 @@ function RemindersPage({
       {showReminderModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-border bg-red-650 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-border bg-red-600 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center">
                   <Bell size={18} className="text-white" />
@@ -1515,7 +1515,7 @@ function RemindersPage({
               <button
                 type="button"
                 onClick={saveReminder}
-                className="flex-1 py-2.5 rounded-lg bg-red-650 text-white text-sm font-semibold hover:bg-red-750 transition-colors"
+                className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
               >
                 Save Reminder
               </button>
@@ -2058,7 +2058,7 @@ export default function App() {
               <Bell size={15} />
               Reminders
               {activeRemindersCount > 0 && (
-                <span className="ml-auto w-4 h-4 rounded-full bg-red-650 text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
+                <span className="ml-auto w-4 h-4 rounded-full bg-red-600 text-white text-[9px] font-bold flex items-center justify-center animate-pulse">
                   {activeRemindersCount}
                 </span>
               )}
