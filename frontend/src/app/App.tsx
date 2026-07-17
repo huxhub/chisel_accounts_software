@@ -3581,57 +3581,6 @@ export default function App() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Company Logo</label>
-                <div className="flex items-center gap-4 bg-white p-4 border border-border rounded-xl shadow-3xs">
-                  {tempSettings.logoUrl ? (
-                    <div className="w-20 h-20 border border-border rounded-xl flex items-center justify-center bg-gray-50/50 shadow-inner overflow-hidden p-1.5 flex-shrink-0">
-                      <img src={tempSettings.logoUrl} className="w-full h-full object-contain rounded-lg" alt="Logo preview" />
-                    </div>
-                  ) : (
-                    <div className="w-20 h-20 border border-border rounded-xl flex flex-col items-center justify-center bg-gray-50/50 text-muted-foreground text-[10px] text-center font-semibold p-2 leading-tight flex-shrink-0 select-none">
-                      <Image size={18} className="text-muted-foreground/45 mb-1" />
-                      Gopuram Icon<br/>(Default)
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2 flex-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const input = document.createElement("input");
-                        input.type = "file";
-                        input.accept = "image/*";
-                        input.onchange = e => {
-                          const file = (e.target as HTMLInputElement).files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              setTempSettings(s => ({ ...s, logoUrl: reader.result as string }));
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        };
-                        input.click();
-                      }}
-                      className="w-full px-4 py-2.5 text-xs font-semibold rounded-xl bg-accent text-white hover:opacity-95 hover:scale-[1.01] transition-all shadow-xs flex items-center justify-center gap-1.5"
-                      style={{ backgroundColor: tempSettings.themeColor }}
-                    >
-                      <Upload size={13} />
-                      Upload Image
-                    </button>
-                    {tempSettings.logoUrl && (
-                      <button
-                        type="button"
-                        onClick={() => setTempSettings({ ...tempSettings, logoUrl: "" })}
-                        className="w-full px-4 py-2.5 text-xs font-semibold rounded-xl border border-border text-muted-foreground hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-1.5"
-                      >
-                        <Trash2 size={13} />
-                        Reset Default
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
 
               <div className="space-y-3">
                 <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Primary Theme Color</label>
