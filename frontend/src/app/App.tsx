@@ -512,32 +512,7 @@ function Dashboard({
   onNavigate: (id: string) => void;
   onAddTransaction: (accountId: string, transaction: any) => void;
 }) {
-  const [showReminderModal, setShowReminderModal] = useState(false);
-  const [reminderNote, setReminderNote] = useState("");
-  const [reminderDate, setReminderDate] = useState("");
 
-  const saveReminder = () => {
-    if (accounts.length === 0) {
-      toast.warning("Please add a company first before setting a reminder!");
-      return;
-    }
-    if (!reminderNote || !reminderDate) {
-      toast.warning("Please fill in both the note and the date.");
-      return;
-    }
-    const tx = {
-      date: new Date().toISOString().split('T')[0],
-      description: reminderNote,
-      type: "debit" as const,
-      amount: 0,
-      dueDate: reminderDate,
-    };
-    const companyAcc = accounts.find(acc => acc.type === "company") || accounts[0];
-    onAddTransaction(companyAcc.id, tx);
-    setReminderNote("");
-    setReminderDate("");
-    setShowReminderModal(false);
-  };
 
   const totalOpening = accounts.reduce((s, a) => s + a.openingBalance, 0);
   const totalCredit = accounts.reduce((s, a) => s + calcTotalCredit(a), 0);
@@ -672,19 +647,6 @@ function Dashboard({
             Overview of all accounts — {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
           </p>
         </div>
-        <button
-          onClick={() => {
-            if (accounts.length === 0) {
-              toast.warning("Please add a company first before setting a reminder!");
-              return;
-            }
-            setShowReminderModal(true);
-          }}
-          className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.98]"
-        >
-          <Bell size={16} />
-          Set Reminder
-        </button>
       </div>
 
 
@@ -989,71 +951,7 @@ function Dashboard({
           </div>
         </div>
       </div>
-      {/* Set Salary Reminder Modal */}
-      {showReminderModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-border">
-            <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-red-50/20">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
-                  <Bell size={16} />
-                </div>
-                <h3 className="font-bold text-base text-foreground">Set Reminder</h3>
-              </div>
-              <button 
-                onClick={() => setShowReminderModal(false)} 
-                className="text-muted-foreground hover:bg-gray-100 p-1.5 rounded-lg transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
-                  Reminder Note
-                </label>
-                <textarea
-                  value={reminderNote}
-                  onChange={e => setReminderNote(e.target.value)}
-                  placeholder="Enter reminder note..."
-                  rows={3}
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 bg-gray-50 text-foreground resize-none"
-                />
-              </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
-                  Reminder Date
-                </label>
-                <input
-                  type="date"
-                  value={reminderDate}
-                  onChange={e => setReminderDate(e.target.value)}
-                  required
-                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/20 bg-gray-50 font-mono text-foreground"
-                />
-              </div>
-            </div>
-
-            <div className="px-6 py-4 bg-gray-50 border-t border-border flex justify-end gap-3">
-              <button 
-                onClick={() => setShowReminderModal(false)} 
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={saveReminder}
-                disabled={!reminderNote || !reminderDate}
-                className="px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-              >
-                Save Reminder
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
