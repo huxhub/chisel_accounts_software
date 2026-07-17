@@ -1376,9 +1376,9 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem("brandswamy_settings");
+    const saved = localStorage.getItem("chisel_settings");
     const defaults = {
-      companyName: "BRAND SWAMY",
+      companyName: "CHISEL",
       companySubtitle: "Accounts Manager",
       logoUrl: "",
       themeColor: "#c21818",
@@ -3603,7 +3603,7 @@ export default function App() {
                   type="text"
                   value={tempSettings.companyName}
                   onChange={e => setTempSettings({ ...tempSettings, companyName: e.target.value })}
-                  placeholder="BRAND SWAMY"
+                  placeholder="CHISEL"
                   className="w-full border border-border rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent bg-white transition-all shadow-3xs font-semibold text-foreground"
                 />
               </div>
@@ -3734,7 +3734,7 @@ export default function App() {
                 type="button"
                 onClick={() => {
                   setSettings(tempSettings);
-                  localStorage.setItem("brandswamy_settings", JSON.stringify(tempSettings));
+                  localStorage.setItem("chisel_settings", JSON.stringify(tempSettings));
                   setShowSettings(false);
                   toast.success("Branding settings saved successfully!");
                 }}

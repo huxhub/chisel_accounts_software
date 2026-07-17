@@ -1,5 +1,5 @@
 {
-  "name": "brandswamy-root",
+  "name": "chisel-root",
   "version": "1.0.0",
   "description": "Root package to run accounts management software frontend and backend concurrently",
   "scripts": {
