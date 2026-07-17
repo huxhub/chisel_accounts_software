@@ -1311,6 +1311,8 @@ export default function App() {
     reference: "",
     document: null as AttachedDoc | null,
     dueDate: "",
+    paymentMode: "cash" as "cash" | "bank",
+    selectedBankId: "",
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1420,9 +1422,19 @@ export default function App() {
       toast.warning("Please fill in a description and amount.");
       return;
     }
+
+    const isCompany = activeAccount.type === "company";
+    const selectedBank = isCompany && form.paymentMode === "bank"
+      ? findAccountById(accounts, form.selectedBankId)
+      : null;
+
+    const companyDescription = isCompany
+      ? `${form.description} (${form.paymentMode === "bank" && selectedBank ? selectedBank.name : "Cash"})`
+      : form.description;
+
     const tx = {
       date: form.date,
-      description: form.description,
+      description: companyDescription,
       type: form.type,
       amount: parseFloat(form.amount),
       reference: form.reference || undefined,
@@ -1433,7 +1445,30 @@ export default function App() {
     // Only reset/close on success — a failure keeps the form open (with the
     // entered data intact) so the user can retry.
     if (result) {
-      setForm({ date: today, description: "", type: "credit", amount: "", reference: "", document: null, dueDate: "" });
+      if (isCompany && form.paymentMode === "bank" && selectedBank) {
+        const bankTx = {
+          date: form.date,
+          description: `${activeAccount.name}: ${form.description}`,
+          type: form.type,
+          amount: parseFloat(form.amount),
+          reference: form.reference || undefined,
+          document: form.document || undefined,
+          dueDate: form.dueDate || undefined,
+        };
+        await handleAddTx(String(selectedBank.id), bankTx, { silent: true });
+      }
+
+      setForm({
+        date: today,
+        description: "",
+        type: "credit",
+        amount: "",
+        reference: "",
+        document: null,
+        dueDate: "",
+        paymentMode: "cash",
+        selectedBankId: "",
+      });
       setShowForm(false);
     }
   };
@@ -1952,7 +1987,15 @@ export default function App() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowForm(true)}
+                  onClick={() => {
+                    const banks = accounts.filter(a => a.type === "bank" || a.type === "overdraft");
+                    setForm(f => ({
+                      ...f,
+                      paymentMode: "cash",
+                      selectedBankId: banks.length > 0 ? String(banks[0].id) : "",
+                    }));
+                    setShowForm(true);
+                  }}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
                   style={{ backgroundColor: activeAccount.color }}
                 >
@@ -2610,6 +2653,51 @@ export default function App() {
                   </button>
                 </div>
               </div>
+
+              {activeAccount.type === "company" && (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Paid Via</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, paymentMode: "cash" }))}
+                      className={`py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border transition-all ${
+                        form.paymentMode === "cash" ? "bg-accent/10 border-accent text-accent" : "border-border text-muted-foreground hover:border-gray-300"
+                      }`}
+                    >
+                      Cash
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, paymentMode: "bank" }))}
+                      className={`py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border transition-all ${
+                        form.paymentMode === "bank" ? "bg-accent/10 border-accent text-accent" : "border-border text-muted-foreground hover:border-gray-300"
+                      }`}
+                    >
+                      Bank Account
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeAccount.type === "company" && form.paymentMode === "bank" && (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Select Bank Account</label>
+                  <select
+                    value={form.selectedBankId}
+                    onChange={e => setForm(f => ({ ...f, selectedBankId: e.target.value }))}
+                    className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
+                  >
+                    {accounts
+                      .filter(a => a.type === "bank" || a.type === "overdraft")
+                      .map(acc => (
+                        <option key={acc.id} value={acc.id}>
+                          {acc.name} ({fmt(calcBalance(acc))})
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
 
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Date</label>
