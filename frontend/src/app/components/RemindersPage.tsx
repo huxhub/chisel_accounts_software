@@ -20,6 +20,7 @@ export function RemindersPage({
   const [tab, setTab] = useState<"active" | "completed">("active");
   const [reminderNote, setReminderNote] = useState("");
   const [reminderDate, setReminderDate] = useState("");
+  const [reminderAmount, setReminderAmount] = useState("");
   const [selectedAccountId, setSelectedAccountId] = useState(() => {
     const companies = accounts.filter(acc => acc.type === "company");
     return companies[0]?.id || "";
@@ -28,9 +29,10 @@ export function RemindersPage({
   const saveReminder = () => {
     if (!selectedAccountId) { toast.warning("Please select a company/account first!"); return; }
     if (!reminderNote || !reminderDate) { toast.warning("Please fill in both note and date."); return; }
-    const tx = { date: new Date().toISOString().split("T")[0], description: reminderNote, type: "debit" as const, amount: 0, dueDate: reminderDate };
+    const parsedAmount = parseFloat(reminderAmount) || 0;
+    const tx = { date: new Date().toISOString().split("T")[0], description: reminderNote, type: "debit" as const, amount: parsedAmount, dueDate: reminderDate };
     onAddTransaction(selectedAccountId, tx);
-    setReminderNote(""); setReminderDate(""); setShowReminderModal(false);
+    setReminderNote(""); setReminderDate(""); setReminderAmount(""); setShowReminderModal(false);
   };
 
   const allReminders = useMemo(() => {
@@ -149,6 +151,10 @@ export function RemindersPage({
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Reminder Note</label>
                 <input type="text" value={reminderNote} onChange={e => setReminderNote(e.target.value)} placeholder="e.g. Pay rent, GST due date..." className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 bg-input-background font-medium" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Amount (₹) <span className="font-normal text-muted-foreground/60">(optional)</span></label>
+                <input type="number" value={reminderAmount} onChange={e => setReminderAmount(e.target.value)} placeholder="0.00" min="0" step="0.01" className="w-full border border-border rounded-lg px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-red-500/30 bg-input-background" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Due Date</label>

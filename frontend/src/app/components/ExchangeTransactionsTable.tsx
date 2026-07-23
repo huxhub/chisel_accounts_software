@@ -97,8 +97,8 @@ export function ExchangeTransactionsTable({
                     <span className="text-muted-foreground/30 text-xs">—</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-right font-mono">{tx.type === "credit" ? <span className="text-emerald-600 font-semibold">{fmt(tx.amount)}</span> : <span className="text-muted-foreground/40">—</span>}</td>
-                <td className="px-4 py-3 text-right font-mono">{tx.type === "debit" ? <span className="text-red-500 font-semibold">{fmt(tx.amount)}</span> : <span className="text-muted-foreground/40">—</span>}</td>
+                <td className="px-4 py-3 text-right font-mono">{tx.type === "credit" && tx.amount > 0 ? <span className="text-emerald-600 font-semibold">{fmt(tx.amount)}</span> : <span className="text-muted-foreground/40">—</span>}</td>
+                <td className="px-4 py-3 text-right font-mono">{tx.type === "debit" && tx.amount > 0 ? <span className="text-red-500 font-semibold">{fmt(tx.amount)}</span> : <span className="text-muted-foreground/40">—</span>}</td>
                 <td className="px-4 py-3 text-center">
                   <button onClick={() => onDeleteTransaction(tx.id)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500 transition-all">
                     <Trash2 size={13} />
