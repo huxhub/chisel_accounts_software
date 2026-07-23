@@ -35,8 +35,13 @@ export function RemindersPage({
 
   const allReminders = useMemo(() => {
     const list: any[] = [];
+    const seenRefs = new Set<string>();
     accounts.forEach(a => {
       (a.transactions || []).filter((tx: any) => tx.dueDate).forEach((tx: any) => {
+        if (tx.reference && (tx.reference.startsWith("EX-") || tx.exchangeType)) {
+          if (seenRefs.has(tx.reference)) return;
+          seenRefs.add(tx.reference);
+        }
         list.push({ ...tx, accountId: a.id, accountName: a.name, accountColor: a.color, accountBg: a.bgColor });
       });
     });

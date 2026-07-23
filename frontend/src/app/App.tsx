@@ -42,7 +42,21 @@ export default function App() {
   const accDetail = useAccountDetail(accounts, activeTab, handleAddAccount, handleDeleteAccount, handleSaveBal, editAccountName, setActiveTab);
 
   const handleCompleteReminder = async (accountId: string, txId: string) => {
+    const targetAcc = accounts.find(a => a.id === accountId);
+    const targetTx = targetAcc?.transactions.find(t => t.id === txId);
+
     await handleEditTx(accountId, txId, { isCompleted: true });
+
+    if (targetTx?.reference) {
+      accounts.forEach(acc => {
+        (acc.transactions || []).forEach(tx => {
+          if (tx.reference === targetTx.reference && (tx.id !== txId || acc.id !== accountId)) {
+            handleEditTx(acc.id, tx.id, { isCompleted: true });
+          }
+        });
+      });
+    }
+
     toast.success("Reminder marked as completed!");
   };
 
