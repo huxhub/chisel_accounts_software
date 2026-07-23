@@ -20,20 +20,24 @@ const sequelize = new Sequelize(
 
 const connectDB = async () => {
   try {
-    // Connect to MySQL server without a database first to ensure the database exists
-    const tempSequelize = new Sequelize(
-      '',
-      dbUser,
-      dbPassword,
-      {
-        host: dbHost,
-        port: dbPort,
-        dialect: 'mysql',
-        logging: false,
-      }
-    );
-    await tempSequelize.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
-    await tempSequelize.close();
+    // Try creating database if user has CREATE DATABASE privileges; ignore if already exists or restricted
+    try {
+      const tempSequelize = new Sequelize(
+        '',
+        dbUser,
+        dbPassword,
+        {
+          host: dbHost,
+          port: dbPort,
+          dialect: 'mysql',
+          logging: false,
+        }
+      );
+      await tempSequelize.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
+      await tempSequelize.close();
+    } catch {
+      // Database already exists or restricted DB user
+    }
 
     // Authenticate and sync the configured database
     await sequelize.authenticate();
