@@ -9,11 +9,15 @@ import { seedDefaultUsers } from './config/seedUsers.js';
 import accountRoutes from './routes/accountRoutes.js';
 
 // Connect to MySQL, then ensure the default users exist before accepting traffic.
-await connectDB();
-await seedDefaultUsers();
+try {
+  await connectDB();
+  await seedDefaultUsers();
+} catch (err) {
+  console.error('[Server Startup Warning]: Database initialization failed:', err.message);
+}
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 // Behind a reverse proxy (Render, nginx, etc.) so rate limiting and secure
 // cookies see the real client IP/protocol instead of the proxy's.
