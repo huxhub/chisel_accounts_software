@@ -37,6 +37,44 @@ const connectDB = async () => {
 
     // Authenticate and sync the configured database
     await sequelize.authenticate();
+
+    // sequelize.sync() creates missing tables but won't add columns to ones
+    // that already exist, so upgrade existing Users tables by hand.
+    try {
+      const [existingColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Users' AND COLUMN_NAME = 'isAdmin'`,
+        { replacements: [dbName] }
+      );
+      if (existingColumns.length === 0) {
+        await sequelize.query(
+          'ALTER TABLE `Users` ADD COLUMN `isAdmin` TINYINT(1) NOT NULL DEFAULT 0'
+        );
+        const adminUsername = process.env.SEED_ADMIN_USERNAME || 'admin';
+        await sequelize.query(
+          'UPDATE `Users` SET `isAdmin` = 1 WHERE `username` = ?',
+          { replacements: [adminUsername] }
+        );
+      }
+    } catch {
+      // Users table doesn't exist yet on first boot
+    }
+
+    try {
+      const [txColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Transactions' AND COLUMN_NAME = 'isCompleted'`,
+        { replacements: [dbName] }
+      );
+      if (txColumns.length === 0) {
+        await sequelize.query(
+          'ALTER TABLE `Transactions` ADD COLUMN `isCompleted` TINYINT(1) NOT NULL DEFAULT 0'
+        );
+      }
+    } catch {
+      // Transactions table doesn't exist yet on first boot
+    }
+
     await sequelize.sync();
     console.log(`MySQL Connected: ${sequelize.config.host}/${sequelize.config.database}`);
   } catch (error) {

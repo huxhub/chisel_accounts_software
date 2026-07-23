@@ -13,6 +13,7 @@ const formatTransaction = (tx) => ({
   document: tx.document,
   dueDate: tx.dueDate,
   exchangeType: tx.exchangeType,
+  isCompleted: Boolean(tx.isCompleted),
   createdAt: tx.createdAt,
 });
 
@@ -155,6 +156,34 @@ export const deleteTransaction = async (req, res) => {
   }
 };
 
+// @desc    Update transaction
+// @route   PUT /api/accounts/:id/transactions/:txId
+export const updateTransaction = async (req, res) => {
+  try {
+    const { date, description, type, amount, reference, document, dueDate, exchangeType, isCompleted } = req.body;
+    const transaction = await Transaction.findByPk(req.params.txId);
+
+    if (transaction) {
+      if (date !== undefined) transaction.date = date;
+      if (description !== undefined) transaction.description = description;
+      if (type !== undefined) transaction.type = type;
+      if (amount !== undefined) transaction.amount = Number(amount);
+      if (reference !== undefined) transaction.reference = reference;
+      if (document !== undefined) transaction.document = document;
+      if (dueDate !== undefined) transaction.dueDate = dueDate;
+      if (exchangeType !== undefined) transaction.exchangeType = exchangeType;
+      if (isCompleted !== undefined) transaction.isCompleted = isCompleted;
+
+      await transaction.save();
+      res.json(formatTransaction(transaction));
+    } else {
+      res.status(404).json({ message: 'Transaction not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // @desc    Create initial accounts if empty
 // @route   POST /api/accounts/seed
 export const seedAccounts = async (req, res) => {
@@ -182,8 +211,10 @@ export const seedAccounts = async (req, res) => {
 // @route   DELETE /api/accounts/clear
 export const clearAccounts = async (req, res) => {
   try {
-    await Transaction.destroy({ where: {}, truncate: true });
-    await Account.destroy({ where: {}, truncate: true });
+    // Plain DELETE, not TRUNCATE: MySQL refuses to TRUNCATE Accounts while
+    // Transactions has a foreign key referencing it, regardless of row count.
+    await Transaction.destroy({ where: {} });
+    await Account.destroy({ where: {} });
     res.json({ message: 'All database records cleared successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });

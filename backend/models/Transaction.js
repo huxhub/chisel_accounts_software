@@ -46,6 +46,10 @@ Transaction.init(
     document: {
       type: DataTypes.JSON,
     },
+    isCompleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     sequelize,

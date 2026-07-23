@@ -57,4 +57,7 @@ export const accountService = {
 
   deleteTransaction: (accountId: string, txId: string) =>
     request(`/${accountId}/transactions/${txId}`, { method: 'DELETE' }),
+
+  updateTransaction: (accountId: string, txId: string, transaction: any) =>
+    request(`/${accountId}/transactions/${txId}`, { method: 'PUT', body: JSON.stringify(transaction) }),
 };

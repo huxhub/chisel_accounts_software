@@ -3,13 +3,20 @@ import User from '../models/User.js';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Single source of truth for session lifetime so the JWT itself and the
+// cookie that carries it can't drift out of sync (they previously did:
+// the token was signed for 30d while JWT_EXPIRY=7d sat unused).
+const JWT_EXPIRY = process.env.JWT_EXPIRY || '7d';
+const expiryMatch = /^(\d+)d$/.exec(JWT_EXPIRY);
+const COOKIE_MAX_AGE_MS = (expiryMatch ? Number(expiryMatch[1]) : 7) * 24 * 60 * 60 * 1000;
+
 // Generate JWT
 const generateToken = (id) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET is not defined in the environment variables');
   }
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+    expiresIn: JWT_EXPIRY,
   });
 };
 
@@ -20,7 +27,7 @@ const setTokenCookie = (res, token) => {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    maxAge: COOKIE_MAX_AGE_MS,
     path: '/',
   });
 };
@@ -103,5 +110,33 @@ export const getMe = (req, res) => {
   res.json({
     _id: req.user.id,
     username: req.user.username,
+    isAdmin: req.user.isAdmin,
   });
+};
+
+// @desc    Change the current user's own password
+// @route   PUT /api/auth/password
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'Please provide current and new password' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'New password must be at least 8 characters' });
+    }
+
+    const user = await User.findByPk(req.user.id);
+    if (!user || !(await user.matchPassword(currentPassword))) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };

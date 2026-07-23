@@ -32,3 +32,13 @@ export const protect = async (req, res, next) => {
     return res.status(401).json({ message: 'Not authorized' });
   }
 };
+
+// Must run after `protect`. Guards destructive/administrative actions
+// (bulk delete, creating new logins) that any authenticated user shouldn't
+// be able to trigger on their own.
+export const requireAdmin = (req, res, next) => {
+  if (!req.user?.isAdmin) {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  return next();
+};

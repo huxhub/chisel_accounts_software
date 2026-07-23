@@ -55,6 +55,23 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     }
   };
 
+  const editTransaction = async (accountId: string, txId: string, transaction: any, options?: { silent?: boolean }) => {
+    try {
+      const updatedTx = await accountService.updateTransaction(accountId, txId, transaction);
+      setAccounts(prev => prev.map(a =>
+        String(a.id) === String(accountId) ? {
+          ...a,
+          transactions: a.transactions.map((t: any) => String(t.id) === String(txId) ? updatedTx : t)
+        } : a
+      ));
+      if (!options?.silent) toast.success('Transaction updated');
+      return updatedTx;
+    } catch (error) {
+      if (!options?.silent) toast.error(getErrorMessage(error, 'Failed to update transaction.'));
+      return null;
+    }
+  };
+
   const saveOpeningBalance = async (accountId: string, value: number) => {
     if (isNaN(value)) {
       toast.warning('Enter a valid opening balance.');
@@ -119,6 +136,7 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     deleteAccount,
     addTransaction,
     deleteTransaction,
+    editTransaction,
     saveOpeningBalance
   };
 };
