@@ -32,31 +32,25 @@ export function useAccountDetail(
 
   // ── Derived data ──
   const reminders = useMemo(() => {
-    return accounts
-      .flatMap(a => {
-        const idx = accounts.findIndex(acc => acc.id === a.id);
-        const color = CHART_COLORS[idx % CHART_COLORS.length];
-        return a.transactions
-          .filter((tx: any) => tx.dueDate && !tx.isCompleted)
-          .map((tx: any) => ({
-            ...tx,
-            accountId: a.id,
-            accountName: a.name,
-            accountColor: color,
-            accountBg: a.bgColor,
-          }));
-      })
-      .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    const list: any[] = [];
+    const seenRefs = new Set<string>();
+    accounts.forEach(a => {
+      const idx = accounts.findIndex(acc => acc.id === a.id);
+      const color = CHART_COLORS[idx % CHART_COLORS.length];
+      (a.transactions || [])
+        .filter((tx: any) => tx.dueDate && !tx.isCompleted)
+        .forEach((tx: any) => {
+          if (tx.reference && (tx.reference.startsWith("EX-") || tx.exchangeType)) {
+            if (seenRefs.has(tx.reference)) return;
+            seenRefs.add(tx.reference);
+          }
+          list.push({ ...tx, accountId: a.id, accountName: a.name, accountColor: color, accountBg: a.bgColor });
+        });
+    });
+    return list.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   }, [accounts]);
 
-  const activeRemindersCount = useMemo(() => {
-    const todayStr = new Date().toISOString().split("T")[0];
-    return reminders.filter((r: any) => {
-      const diffTime = new Date(r.dueDate).getTime() - new Date(todayStr).getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 3;
-    }).length;
-  }, [reminders]);
+  const activeRemindersCount = useMemo(() => reminders.length, [reminders]);
 
   const activeAccountReminders = useMemo(() => {
     if (!activeAccount) return [];
