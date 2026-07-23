@@ -29,7 +29,7 @@ export function ExchangeTransactionsTable({
 
       {/* Mobile View */}
       <div className="md:hidden flex flex-col divide-y divide-border/60">
-        {exchangeTransactions.map((tx: any) => (
+        {[...exchangeTransactions].reverse().map((tx: any) => (
           <div key={tx.id} className="p-5 flex flex-col gap-3 hover:bg-gray-50 transition-colors">
             <div className="flex justify-between items-start gap-4">
               <div className="min-w-0">
@@ -79,14 +79,18 @@ export function ExchangeTransactionsTable({
             </tr>
           </thead>
           <tbody>
-            {exchangeTransactions.map((tx: any, idx: number) => (
+            {[...exchangeTransactions].reverse().map((tx: any, idx: number) => (
               <tr key={tx.id} className="border-b border-border/60 hover:bg-gray-50 transition-colors group">
                 <td className="px-4 py-3 text-center font-mono text-xs text-muted-foreground">{idx + 1}</td>
                 <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{tx.date.split("-").reverse().join("/")}</td>
                 <td className="px-4 py-3 text-foreground font-medium">{tx.description}</td>
                 <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{tx.reference || "—"}</td>
                 <td className="px-4 py-3 text-center">
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize inline-block ${tx.exchangeType === "loan" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"}`}>{tx.exchangeType}</span>
+                  {tx.isCompleted ? (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Completed</span>
+                  ) : (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize inline-block ${tx.exchangeType === "loan" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"}`}>{tx.exchangeType}</span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-left">
                   {tx.dueDate ? (

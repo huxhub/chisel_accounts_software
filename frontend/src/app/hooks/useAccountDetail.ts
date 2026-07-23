@@ -69,7 +69,7 @@ export function useAccountDetail(
 
   const normalTransactions = useMemo(() => {
     if (!activeAccount) return [];
-    return activeAccount.transactions.filter((tx: any) => !tx.exchangeType);
+    return activeAccount.transactions.filter((tx: any) => !tx.exchangeType && !tx.isReminder);
   }, [activeAccount]);
 
   const exchangeTransactions = useMemo(() => {

@@ -14,6 +14,7 @@ const formatTransaction = (tx) => ({
   dueDate: tx.dueDate,
   exchangeType: tx.exchangeType,
   isCompleted: Boolean(tx.isCompleted),
+  isReminder: Boolean(tx.isReminder),
   createdAt: tx.createdAt,
 });
 
@@ -113,7 +114,7 @@ export const updateOpeningBalance = async (req, res) => {
 // @route   POST /api/accounts/:id/transactions
 export const addTransaction = async (req, res) => {
   try {
-    const { date, description, type, amount, reference, document, dueDate, exchangeType } = req.body;
+    const { date, description, type, amount, reference, document, dueDate, exchangeType, isReminder } = req.body;
     const account = await Account.findByPk(req.params.id);
 
     if (account) {
@@ -128,6 +129,7 @@ export const addTransaction = async (req, res) => {
         document,
         dueDate,
         exchangeType,
+        isReminder: Boolean(isReminder),
       });
 
       res.status(201).json(formatTransaction(transaction));
@@ -160,7 +162,7 @@ export const deleteTransaction = async (req, res) => {
 // @route   PUT /api/accounts/:id/transactions/:txId
 export const updateTransaction = async (req, res) => {
   try {
-    const { date, description, type, amount, reference, document, dueDate, exchangeType, isCompleted } = req.body;
+    const { date, description, type, amount, reference, document, dueDate, exchangeType, isCompleted, isReminder } = req.body;
     const transaction = await Transaction.findByPk(req.params.txId);
 
     if (transaction) {
@@ -173,6 +175,7 @@ export const updateTransaction = async (req, res) => {
       if (dueDate !== undefined) transaction.dueDate = dueDate;
       if (exchangeType !== undefined) transaction.exchangeType = exchangeType;
       if (isCompleted !== undefined) transaction.isCompleted = isCompleted;
+      if (isReminder !== undefined) transaction.isReminder = isReminder;
 
       await transaction.save();
       res.json(formatTransaction(transaction));

@@ -23,7 +23,7 @@ export function DashboardTransfersLog({ interCompanyTransfers }: { interCompanyT
       ) : (
         <>
           <div className="md:hidden flex flex-col divide-y divide-border/60">
-            {interCompanyTransfers.map(tx => (
+            {[...interCompanyTransfers].reverse().map(tx => (
               <div key={tx.id} className="p-4 flex flex-col gap-2 hover:bg-gray-50 transition-colors">
                 <div className="flex justify-between items-start gap-4">
                   <div className="min-w-0">
@@ -59,7 +59,7 @@ export function DashboardTransfersLog({ interCompanyTransfers }: { interCompanyT
                 </tr>
               </thead>
               <tbody>
-                {interCompanyTransfers.map((tx, idx) => (
+                {[...interCompanyTransfers].reverse().map((tx, idx) => (
                   <tr key={tx.id} className="border-b border-border/60 hover:bg-gray-50 transition-colors">
                     <td className="px-6 py-3.5 text-center font-mono text-xs text-muted-foreground">{idx + 1}</td>
                     <td className="px-6 py-3.5 font-mono text-xs text-muted-foreground">{tx.date.split("-").reverse().join("/")}</td>

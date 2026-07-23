@@ -30,7 +30,7 @@ export function RemindersPage({
     if (!selectedAccountId) { toast.warning("Please select a company/account first!"); return; }
     if (!reminderNote || !reminderDate) { toast.warning("Please fill in both note and date."); return; }
     const parsedAmount = parseFloat(reminderAmount) || 0;
-    const tx = { date: new Date().toISOString().split("T")[0], description: reminderNote, type: "debit" as const, amount: parsedAmount, dueDate: reminderDate };
+    const tx = { date: new Date().toISOString().split("T")[0], description: reminderNote, type: "debit" as const, amount: parsedAmount, dueDate: reminderDate, isReminder: true };
     onAddTransaction(selectedAccountId, tx);
     setReminderNote(""); setReminderDate(""); setReminderAmount(""); setShowReminderModal(false);
   };

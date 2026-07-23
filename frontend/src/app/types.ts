@@ -23,6 +23,7 @@ export interface Transaction {
   dueDate?: string;
   exchangeType?: "loan" | "credit";
   isCompleted?: boolean;
+  isReminder?: boolean;
 }
 
 export interface Account {

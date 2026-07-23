@@ -50,6 +50,10 @@ Transaction.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    isReminder: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   },
   {
     sequelize,

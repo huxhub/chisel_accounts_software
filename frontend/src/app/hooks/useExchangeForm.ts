@@ -83,7 +83,6 @@ export function useExchangeForm(
     const baseTx = {
       date: exchangeForm.date,
       amount: amt,
-      dueDate: exchangeForm.dueDate || undefined,
       exchangeType: exchangeForm.exchangeType,
     };
 
@@ -93,7 +92,8 @@ export function useExchangeForm(
             accountId: exchangeForm.fromCompanyId,
             tx: {
               ...baseTx,
-              reference: `${ref}-C`,
+              dueDate: exchangeForm.dueDate || undefined,
+              reference: ref,
               type: "debit" as const,
               description: exchangeForm.exchangeType === "loan"
                 ? `Loan to ${toCompanyAcc!.name}${userDescription}`
@@ -104,21 +104,22 @@ export function useExchangeForm(
             accountId: exchangeForm.toCompanyId,
             tx: {
               ...baseTx,
-              reference: `${ref}-C`,
+              dueDate: exchangeForm.dueDate || undefined,
+              reference: ref,
               type: "credit" as const,
               description: exchangeForm.exchangeType === "loan"
                 ? `Loan from ${fromCompanyAcc!.name}${userDescription}`
                 : `Transfer from ${fromCompanyAcc!.name}${userDescription}`
             }
           },
-          { accountId: exchangeForm.sourceId, tx: { ...baseTx, reference: `${ref}-B`, type: "debit" as const, description: `Transfer to ${toCompanyAcc!.name}${userDescription}` } },
-          { accountId: exchangeForm.destId, tx: { ...baseTx, reference: `${ref}-B`, type: "credit" as const, description: `Transfer from ${fromCompanyAcc!.name}${userDescription}` } },
+          { accountId: exchangeForm.sourceId, tx: { ...baseTx, reference: ref, type: "debit" as const, description: `Transfer to ${toCompanyAcc!.name}${userDescription}` } },
+          { accountId: exchangeForm.destId, tx: { ...baseTx, reference: ref, type: "credit" as const, description: `Transfer from ${fromCompanyAcc!.name}${userDescription}` } },
         ]
       : (() => {
           const label = exchangeForm.exchangeType === "loan" ? "Loan" : "Transfer";
           return [
-            { accountId: exchangeForm.sourceId, tx: { ...baseTx, reference: ref, type: "debit" as const, description: `${label} to ${destAcc.name}${userDescription}` } },
-            { accountId: exchangeForm.destId, tx: { ...baseTx, reference: ref, type: "credit" as const, description: `${label} from ${sourceAcc.name}${userDescription}` } },
+            { accountId: exchangeForm.sourceId, tx: { ...baseTx, dueDate: exchangeForm.dueDate || undefined, reference: ref, type: "debit" as const, description: `${label} to ${destAcc.name}${userDescription}` } },
+            { accountId: exchangeForm.destId, tx: { ...baseTx, dueDate: exchangeForm.dueDate || undefined, reference: ref, type: "credit" as const, description: `${label} from ${sourceAcc.name}${userDescription}` } },
           ];
         })();
 
