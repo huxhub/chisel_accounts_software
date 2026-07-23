@@ -21,25 +21,32 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 
-// Only these origins may make credentialed requests; a wildcard/reflected
-// origin plus `credentials: true` would let any site read authenticated
-// financial data via the browser. Configure via CORS_ORIGINS (comma-separated).
-const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:5173')
+const defaultOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://chisel.uxhub.in',
+  'http://chisel.uxhub.in',
+  'https://chisel-as-bd.uxhub.in',
+];
+
+const envOrigins = (process.env.CORS_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+
 app.use(cors({
   origin(origin, callback) {
-    // Allow non-browser tools (no Origin header) and any explicitly configured origin.
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    const err = new Error('Not allowed by CORS');
-    err.status = 403;
-    return callback(err);
+    console.warn(`[CORS Blocked Origin]: ${origin}`);
+    return callback(null, false);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
 app.use(cookieParser());
 // Increase payload limit for document uploads (e.g. data URLs)
