@@ -69,7 +69,7 @@ export function useAccountDetail(
 
   const normalTransactions = useMemo(() => {
     if (!activeAccount) return [];
-    return activeAccount.transactions.filter((tx: any) => !tx.exchangeType && !tx.isReminder);
+    return activeAccount.transactions.filter((tx: any) => !tx.exchangeType && !tx.isReminder && !tx.dueDate);
   }, [activeAccount]);
 
   const exchangeTransactions = useMemo(() => {
@@ -81,12 +81,12 @@ export function useAccountDetail(
     if (!activeAccount) return {};
     let bal = activeAccount.openingBalance;
     const map: Record<string, number> = {};
-    activeAccount.transactions.forEach((tx: any) => {
+    normalTransactions.forEach((tx: any) => {
       bal = tx.type === "credit" ? bal + tx.amount : bal - tx.amount;
       map[tx.id] = bal;
     });
     return map;
-  }, [activeAccount]);
+  }, [activeAccount, normalTransactions]);
 
   // ── Actions ──
   const addCompany = async () => {
