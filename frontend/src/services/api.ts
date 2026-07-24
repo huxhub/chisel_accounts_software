@@ -3,15 +3,26 @@ import { API_BASE_URL } from './config';
 
 const API_URL = `${API_BASE_URL}/api/accounts`;
 
-const JSON_HEADERS: Record<string, string> = { 'Content-Type': 'application/json' };
+function getHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...extraHeaders,
+  };
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
 
 async function request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
+  const mergedHeaders = getHeaders((options.headers as Record<string, string>) || {});
   try {
     response = await fetch(`${API_URL}${path}`, {
       credentials: 'include',
-      headers: JSON_HEADERS,
       ...options,
+      headers: mergedHeaders,
     });
   } catch {
     throw new Error('Unable to reach the server. Check your connection and try again.');

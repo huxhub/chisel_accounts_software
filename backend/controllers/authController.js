@@ -56,10 +56,13 @@ export const registerUser = async (req, res) => {
     });
 
     if (user) {
-      setTokenCookie(res, generateToken(user.id));
+      const token = generateToken(user.id);
+      setTokenCookie(res, token);
       res.status(201).json({
         _id: user.id,
         username: user.username,
+        isAdmin: user.isAdmin,
+        token,
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
@@ -79,10 +82,13 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ where: { username } });
 
     if (user && (await user.matchPassword(password))) {
-      setTokenCookie(res, generateToken(user.id));
+      const token = generateToken(user.id);
+      setTokenCookie(res, token);
       res.json({
         _id: user.id,
         username: user.username,
+        isAdmin: user.isAdmin,
+        token,
       });
     } else {
       res.status(401).json({ message: 'Invalid credentials' });
