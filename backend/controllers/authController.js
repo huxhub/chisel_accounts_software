@@ -113,10 +113,12 @@ export const logoutUser = (req, res) => {
 // @desc    Get the currently authenticated user
 // @route   GET /api/auth/me
 export const getMe = (req, res) => {
+  const token = generateToken(req.user.id);
   res.json({
     _id: req.user.id,
     username: req.user.username,
     isAdmin: req.user.isAdmin,
+    token,
   });
 };
 

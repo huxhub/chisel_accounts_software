@@ -71,7 +71,11 @@ export const authService = {
         }
         return null;
       }
-      return response.json();
+      const data = await response.json();
+      if (data?.token) {
+        localStorage.setItem('auth_token', data.token);
+      }
+      return data;
     } catch {
       // Network error (e.g. backend unreachable) — treat as logged out.
       return null;
