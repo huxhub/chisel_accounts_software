@@ -1,4 +1,4 @@
-import { ArrowLeftRight, X } from "lucide-react";
+import { ArrowLeftRight, Landmark, X } from "lucide-react";
 import type { Account } from "../../types";
 import { fmtSign, calcBalance } from "../../types";
 
@@ -10,6 +10,12 @@ export function ExchangeModal({
 }) {
   if (!showExchange) return null;
 
+  const isCompanyToBank = (exchangeForm.category || "companyToBank") === "companyToBank";
+  const isSubmitDisabled = !exchangeForm.sourceId ||
+    !exchangeForm.destId ||
+    !exchangeForm.amount ||
+    (isCompanyToBank && (!exchangeForm.fromCompanyId || !exchangeForm.toCompanyId));
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden flex flex-col max-h-[90vh]">
@@ -18,7 +24,9 @@ export function ExchangeModal({
             <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center"><ArrowLeftRight size={18} className="text-white" /></div>
             <div>
               <h3 className="font-bold text-base text-white">Inter-Account Transfer</h3>
-              <p className="text-xs text-white/60">Record a company payment made through bank accounts</p>
+              <p className="text-xs text-white/60">
+                {isCompanyToBank ? "Record a company payment made through bank accounts" : "Record a direct transfer between two bank accounts"}
+              </p>
             </div>
           </div>
           <button onClick={() => setShowExchange(false)} className="text-white/60 hover:text-white transition-colors"><X size={20} /></button>
@@ -27,54 +35,77 @@ export function ExchangeModal({
         <div className="p-6 space-y-4 flex-1 overflow-y-auto">
           <div>
             <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Transfer Between</label>
-            <div className="grid grid-cols-1">
-              <div className="py-2.5 rounded-lg text-xs font-semibold flex flex-col items-center justify-center gap-1 border-2 border-indigo-500 bg-indigo-50 text-indigo-700">
-                <ArrowLeftRight size={15} /> Company → Bank
-              </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setExchangeForm({ ...exchangeForm, category: "companyToBank" })}
+                className={`py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border-2 transition-all ${
+                  isCompanyToBank
+                    ? "bg-indigo-50 border-indigo-500 text-indigo-700 shadow-sm"
+                    : "border-border text-muted-foreground hover:border-indigo-200"
+                }`}
+              >
+                <ArrowLeftRight size={14} /> Company → Bank
+              </button>
+              <button
+                type="button"
+                onClick={() => setExchangeForm({ ...exchangeForm, category: "bank" })}
+                className={`py-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 border-2 transition-all ${
+                  !isCompanyToBank
+                    ? "bg-teal-50 border-teal-500 text-teal-700 shadow-sm"
+                    : "border-border text-muted-foreground hover:border-teal-200"
+                }`}
+              >
+                <Landmark size={14} /> Bank → Bank
+              </button>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">From Company</label>
-            <select
-              value={exchangeForm.fromCompanyId}
-              onChange={e => {
-                const companyAccs = accounts.filter(a => a.type === "company");
-                const nextToId = companyAccs.find(a => String(a.id) !== e.target.value)?.id ?? "";
-                setExchangeForm({ ...exchangeForm, fromCompanyId: e.target.value, toCompanyId: String(nextToId) === e.target.value ? "" : String(nextToId) });
-              }}
-              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
-            >
-              {accounts.filter(acc => acc.type === "company").length === 0 && <option value="">No company accounts available</option>}
-              {accounts.filter(acc => acc.type === "company").map(acc => (<option key={acc.id} value={acc.id}>{acc.name}</option>))}
-            </select>
-          </div>
+          {isCompanyToBank && (
+            <>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">From Company</label>
+                <select
+                  value={exchangeForm.fromCompanyId}
+                  onChange={e => {
+                    const companyAccs = accounts.filter(a => a.type === "company");
+                    const nextToId = companyAccs.find(a => String(a.id) !== e.target.value)?.id ?? "";
+                    setExchangeForm({ ...exchangeForm, fromCompanyId: e.target.value, toCompanyId: String(nextToId) === e.target.value ? "" : String(nextToId) });
+                  }}
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
+                >
+                  {accounts.filter(acc => acc.type === "company").length === 0 && <option value="">No company accounts available</option>}
+                  {accounts.filter(acc => acc.type === "company").map(acc => (<option key={acc.id} value={acc.id}>{acc.name}</option>))}
+                </select>
+              </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">To Company</label>
-            <select
-              value={exchangeForm.toCompanyId}
-              onChange={e => setExchangeForm({ ...exchangeForm, toCompanyId: e.target.value })}
-              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
-            >
-              {accounts.filter(acc => acc.type === "company" && String(acc.id) !== exchangeForm.fromCompanyId).length === 0 && <option value="">No other company accounts</option>}
-              {accounts.filter(acc => acc.type === "company" && String(acc.id) !== exchangeForm.fromCompanyId).map(acc => (<option key={acc.id} value={acc.id}>{acc.name}</option>))}
-            </select>
-          </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">To Company</label>
+                <select
+                  value={exchangeForm.toCompanyId}
+                  onChange={e => setExchangeForm({ ...exchangeForm, toCompanyId: e.target.value })}
+                  className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
+                >
+                  {accounts.filter(acc => acc.type === "company" && String(acc.id) !== exchangeForm.fromCompanyId).length === 0 && <option value="">No other company accounts</option>}
+                  {accounts.filter(acc => acc.type === "company" && String(acc.id) !== exchangeForm.fromCompanyId).map(acc => (<option key={acc.id} value={acc.id}>{acc.name}</option>))}
+                </select>
+              </div>
+            </>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">From Bank Account</label>
             <select
               value={exchangeForm.sourceId}
               onChange={e => {
-                const bankAccs = accounts.filter(a => a.type === "bank");
+                const bankAccs = accounts.filter(a => a.type === "bank" || a.type === "overdraft");
                 const nextDestId = bankAccs.find(a => String(a.id) !== e.target.value)?.id ?? "";
                 setExchangeForm({ ...exchangeForm, sourceId: e.target.value, destId: String(nextDestId) === e.target.value ? "" : String(nextDestId) });
               }}
               className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
             >
-              {accounts.filter(acc => acc.type === "bank").length === 0 && <option value="">No bank accounts available</option>}
-              {accounts.filter(acc => acc.type === "bank").map(acc => (<option key={acc.id} value={acc.id}>{acc.name} ({fmtSign(calcBalance(acc))})</option>))}
+              {accounts.filter(acc => acc.type === "bank" || acc.type === "overdraft").length === 0 && <option value="">No bank accounts available</option>}
+              {accounts.filter(acc => acc.type === "bank" || acc.type === "overdraft").map(acc => (<option key={acc.id} value={acc.id}>{acc.name} ({fmtSign(calcBalance(acc))})</option>))}
             </select>
           </div>
 
@@ -85,8 +116,8 @@ export function ExchangeModal({
               onChange={e => setExchangeForm({ ...exchangeForm, destId: e.target.value })}
               className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
             >
-              {accounts.filter(acc => acc.type === "bank" && String(acc.id) !== exchangeForm.sourceId).length === 0 && <option value="">No other bank accounts</option>}
-              {accounts.filter(acc => acc.type === "bank" && String(acc.id) !== exchangeForm.sourceId).map(acc => (<option key={acc.id} value={acc.id}>{acc.name} ({fmtSign(calcBalance(acc))})</option>))}
+              {accounts.filter(acc => (acc.type === "bank" || acc.type === "overdraft") && String(acc.id) !== exchangeForm.sourceId).length === 0 && <option value="">No other bank accounts</option>}
+              {accounts.filter(acc => (acc.type === "bank" || acc.type === "overdraft") && String(acc.id) !== exchangeForm.sourceId).map(acc => (<option key={acc.id} value={acc.id}>{acc.name} ({fmtSign(calcBalance(acc))})</option>))}
             </select>
           </div>
 
@@ -125,7 +156,7 @@ export function ExchangeModal({
 
         <div className="px-6 pb-6 flex gap-3">
           <button type="button" onClick={() => setShowExchange(false)} className="flex-1 py-2.5 rounded-lg border border-border text-sm font-semibold text-foreground hover:bg-gray-50 transition-colors">Cancel</button>
-          <button type="button" disabled={!exchangeForm.sourceId || !exchangeForm.destId || !exchangeForm.amount || (!exchangeForm.fromCompanyId || !exchangeForm.toCompanyId)} onClick={handleExchangeSubmit} className="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all">Transfer Funds</button>
+          <button type="button" disabled={isSubmitDisabled} onClick={handleExchangeSubmit} className="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all">Transfer Funds</button>
         </div>
       </div>
     </div>
