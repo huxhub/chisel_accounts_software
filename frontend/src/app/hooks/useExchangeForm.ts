@@ -117,9 +117,14 @@ export function useExchangeForm(
         ]
       : (() => {
           const label = exchangeForm.exchangeType === "loan" ? "Loan" : "Transfer";
+          const bankBaseTx = {
+            date: exchangeForm.date,
+            amount: amt,
+            reference: ref,
+          };
           return [
-            { accountId: exchangeForm.sourceId, tx: { ...baseTx, dueDate: exchangeForm.dueDate || undefined, reference: ref, type: "debit" as const, description: `${label} to ${destAcc.name}${userDescription}` } },
-            { accountId: exchangeForm.destId, tx: { ...baseTx, dueDate: exchangeForm.dueDate || undefined, reference: ref, type: "credit" as const, description: `${label} from ${sourceAcc.name}${userDescription}` } },
+            { accountId: exchangeForm.sourceId, tx: { ...bankBaseTx, type: "debit" as const, description: `${label} to ${destAcc.name}${userDescription}` } },
+            { accountId: exchangeForm.destId, tx: { ...bankBaseTx, type: "credit" as const, description: `${label} from ${sourceAcc.name}${userDescription}` } },
           ];
         })();
 
