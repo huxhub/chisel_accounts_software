@@ -1,4 +1,4 @@
-import { Menu, ArrowLeftRight, FileDown } from "lucide-react";
+import { Menu, ArrowLeftRight, FileDown, Tag } from "lucide-react";
 import chiselLogo from "../../assets/logo.png";
 import type { AppSettings } from "../hooks/useSettings";
 
@@ -8,12 +8,14 @@ export function Header({
   setMobileMenuOpen,
   onOpenExchange,
   onOpenReport,
+  onOpenPrograms,
 }: {
   settings: AppSettings;
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (v: boolean) => void;
   onOpenExchange: () => void;
   onOpenReport: () => void;
+  onOpenPrograms?: () => void;
 }) {
   return (
     <header className="bg-primary text-primary-foreground px-4 sm:px-6 py-4 flex flex-wrap sm:flex-nowrap items-center justify-between shadow-lg flex-shrink-0 gap-3">
@@ -42,6 +44,15 @@ export function Header({
       </div>
 
       <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+        {onOpenPrograms && (
+          <button
+            onClick={onOpenPrograms}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
+          >
+            <Tag size={16} />
+            <span>Programs</span>
+          </button>
+        )}
         <button
           onClick={onOpenExchange}
           className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"

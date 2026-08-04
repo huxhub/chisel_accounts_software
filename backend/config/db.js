@@ -47,7 +47,7 @@ const connectDB = async () => {
     try {
       const [existingColumns] = await sequelize.query(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Users' AND COLUMN_NAME = 'isAdmin'`,
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('Users') AND LOWER(COLUMN_NAME) = LOWER('isAdmin')`,
         { replacements: [dbName] }
       );
       if (existingColumns.length === 0) {
@@ -67,7 +67,7 @@ const connectDB = async () => {
     try {
       const [txColumns] = await sequelize.query(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Transactions' AND COLUMN_NAME = 'isCompleted'`,
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('Transactions') AND LOWER(COLUMN_NAME) = LOWER('isCompleted')`,
         { replacements: [dbName] }
       );
       if (txColumns.length === 0) {
@@ -78,12 +78,23 @@ const connectDB = async () => {
 
       const [remColumns] = await sequelize.query(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Transactions' AND COLUMN_NAME = 'isReminder'`,
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('Transactions') AND LOWER(COLUMN_NAME) = LOWER('isReminder')`,
         { replacements: [dbName] }
       );
       if (remColumns.length === 0) {
         await sequelize.query(
           'ALTER TABLE `Transactions` ADD COLUMN `isReminder` TINYINT(1) NOT NULL DEFAULT 0'
+        );
+      }
+
+      const [progColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('Transactions') AND LOWER(COLUMN_NAME) = LOWER('programId')`,
+        { replacements: [dbName] }
+      );
+      if (progColumns.length === 0) {
+        await sequelize.query(
+          'ALTER TABLE `Transactions` ADD COLUMN `programId` INT NULL'
         );
       }
     } catch {
@@ -93,11 +104,10 @@ const connectDB = async () => {
     await sequelize.sync();
     console.log(`MySQL Connected: ${sequelize.config.host}/${sequelize.config.database}`);
   } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
+    console.error(`[DB Error]: ${error.message}`);
+    throw error;
   }
 };
 
 export default connectDB;
 export { sequelize };
-

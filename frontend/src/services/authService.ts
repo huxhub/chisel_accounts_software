@@ -80,5 +80,20 @@ export const authService = {
       // Network error (e.g. backend unreachable) — treat as logged out.
       return null;
     }
+  },
+
+  updateCredentials: async (credentials: { username?: string; password?: string }) => {
+    const response = await fetch(`${API_URL}/credentials`, {
+      method: 'PUT',
+      headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+      credentials: 'include',
+      body: JSON.stringify(credentials),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Failed to update credentials');
+    if (data.token) {
+      localStorage.setItem('auth_token', data.token);
+    }
+    return data;
   }
 };

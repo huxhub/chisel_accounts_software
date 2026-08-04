@@ -66,11 +66,14 @@ app.use('/api', rateLimit({
 }));
 
 import authRoutes from './routes/authRoutes.js';
+import programRoutes from './routes/programRoutes.js';
 import { protect } from './middleware/authMiddleware.js';
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', protect, accountRoutes);
+app.use('/api/programs', protect, programRoutes);
+
 
 // Basic Route
 app.get('/', (req, res) => {

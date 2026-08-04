@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bell, Building2, Landmark, CreditCard, Plus, ChevronRight, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Bell, ChevronRight, Settings, LogOut, History, Plus } from "lucide-react";
 import type { Account } from "../types";
 import { calcBalance, fmtSign, accountTypeIcon } from "../types";
 
@@ -72,69 +72,80 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed md:relative z-30 inset-y-0 left-0 w-80 md:w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${
+      className={`fixed md:relative z-30 inset-y-0 left-0 w-80 md:w-64 bg-white border-r border-slate-200 flex flex-col h-full overflow-hidden transition-transform duration-300 ease-in-out md:translate-x-0 ${
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >
-      <div className="flex-1 overflow-y-auto flex flex-col">
-        <div className="space-y-4 flex-1 py-4">
-          {/* Top Links */}
-          <div className="px-4 space-y-1.5">
-            <button
-              onClick={() => navTo("dashboard")}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                activeTab === "dashboard"
-                  ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
-                  : "text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              <LayoutDashboard size={18} className={activeTab === "dashboard" ? "text-blue-600" : "text-slate-500"} />
-              <span>Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => navTo("reminders")}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
-                activeTab === "reminders"
-                  ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
-                  : "text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Bell size={18} className={activeTab === "reminders" ? "text-blue-600" : "text-slate-500"} />
-                <span className={activeTab === "reminders" ? "text-blue-600" : "text-slate-700"}>Reminders</span>
-              </div>
-              {activeRemindersCount > 0 && (
-                <span className="w-5 h-5 rounded-full bg-[#f87171] text-white text-xs font-bold flex items-center justify-center shadow-2xs">
-                  {activeRemindersCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Account Groups */}
-          {renderGroup("COMPANIES", companies, "company")}
-          {renderGroup("BANKS", banks, "bank")}
-          {renderGroup("OVERDRAFTS", overdrafts, "overdraft")}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-100 space-y-1 mt-auto">
+      {/* Scrollable Navigation Items */}
+      <div className="flex-1 overflow-y-auto py-4 space-y-4">
+        {/* Top Links */}
+        <div className="px-4 space-y-1.5">
           <button
-            onClick={onOpenSettings}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            onClick={() => navTo("dashboard")}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeTab === "dashboard"
+                ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
+                : "text-slate-700 hover:bg-slate-50"
+            }`}
           >
-            <Settings size={18} className="text-slate-500" />
-            <span>Settings</span>
+            <LayoutDashboard size={18} className={`shrink-0 ${activeTab === "dashboard" ? "text-blue-600" : "text-slate-500"}`} />
+            <span className="truncate whitespace-nowrap">Dashboard</span>
           </button>
+
           <button
-            onClick={onLogout}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+            onClick={() => navTo("reminders")}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeTab === "reminders"
+                ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
+                : "text-slate-700 hover:bg-slate-50"
+            }`}
           >
-            <LogOut size={18} className="text-red-600" />
-            <span>Logout</span>
+            <div className="flex items-center gap-3 min-w-0">
+              <Bell size={18} className={`shrink-0 ${activeTab === "reminders" ? "text-blue-600" : "text-slate-500"}`} />
+              <span className={`truncate whitespace-nowrap ${activeTab === "reminders" ? "text-blue-600" : "text-slate-700"}`}>Reminders</span>
+            </div>
+            {activeRemindersCount > 0 && (
+              <span className="w-5 h-5 rounded-full bg-[#f87171] text-white text-xs font-bold flex items-center justify-center shadow-2xs shrink-0 ml-1">
+                {activeRemindersCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => navTo("history")}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeTab === "history"
+                ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
+                : "text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            <History size={18} className={`shrink-0 ${activeTab === "history" ? "text-blue-600" : "text-slate-500"}`} />
+            <span className="truncate whitespace-nowrap">Transaction Summary</span>
           </button>
         </div>
+
+        {/* Account Groups */}
+        {renderGroup("COMPANIES", companies, "company")}
+        {renderGroup("BANKS", banks, "bank")}
+        {renderGroup("OVERDRAFTS", overdrafts, "overdraft")}
+      </div>
+
+      {/* Fixed Footer */}
+      <div className="p-4 border-t border-slate-100 space-y-1 bg-white shrink-0">
+        <button
+          onClick={onOpenSettings}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+        >
+          <Settings size={18} className="text-slate-500 shrink-0" />
+          <span>Settings</span>
+        </button>
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors"
+        >
+          <LogOut size={18} className="text-red-600 shrink-0" />
+          <span>Logout</span>
+        </button>
       </div>
     </aside>
   );

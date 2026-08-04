@@ -148,3 +148,47 @@ export const changePassword = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+// @desc    Update current user's username and/or password
+// @route   PUT /api/auth/credentials
+export const updateCredentials = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (username && username.trim() !== '') {
+      const trimmedUsername = username.trim();
+      const existingUser = await User.findOne({ where: { username: trimmedUsername } });
+      if (existingUser && existingUser.id !== user.id) {
+        return res.status(400).json({ message: 'Username is already taken' });
+      }
+      user.username = trimmedUsername;
+    }
+
+    if (password && password.trim() !== '') {
+      if (password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters' });
+      }
+      user.password = password;
+    }
+
+    await user.save();
+
+    const token = generateToken(user.id);
+    setTokenCookie(res, token);
+
+    res.json({
+      _id: user.id,
+      username: user.username,
+      isAdmin: user.isAdmin,
+      token,
+      message: 'Credentials updated successfully',
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

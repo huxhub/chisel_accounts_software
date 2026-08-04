@@ -11,6 +11,13 @@ export interface AttachedDoc {
   size: number;
 }
 
+export interface Program {
+  id: number;
+  name: string;
+  color: string;
+  createdAt?: string;
+}
+
 export interface Transaction {
   id: string;
   date: string;
@@ -24,6 +31,8 @@ export interface Transaction {
   exchangeType?: "loan" | "credit";
   isCompleted?: boolean;
   isReminder?: boolean;
+  programId?: number | null;
+  programName?: string | null;
 }
 
 export interface Account {
@@ -55,18 +64,24 @@ export const CHART_COLORS = [
 // ─── Utility Functions ─────────────────────────────────────────────────────────
 
 export function calcBalance(account: Account): number {
-  return account.transactions.reduce(
-    (bal, tx) => (tx.type === "credit" ? bal + tx.amount : bal - tx.amount),
-    account.openingBalance
-  );
+  return account.transactions
+    .filter(tx => !tx.isReminder)
+    .reduce(
+      (bal, tx) => (tx.type === "credit" ? bal + tx.amount : bal - tx.amount),
+      account.openingBalance
+    );
 }
 
 export function calcTotalCredit(account: Account): number {
-  return account.transactions.filter(t => t.type === "credit").reduce((s, t) => s + t.amount, 0);
+  return account.transactions
+    .filter(t => t.type === "credit" && !t.isReminder)
+    .reduce((s, t) => s + t.amount, 0);
 }
 
 export function calcTotalDebit(account: Account): number {
-  return account.transactions.filter(t => t.type === "debit").reduce((s, t) => s + t.amount, 0);
+  return account.transactions
+    .filter(t => t.type === "debit" && !t.isReminder)
+    .reduce((s, t) => s + t.amount, 0);
 }
 
 export function fmt(n: number): string {
@@ -81,9 +96,6 @@ export function fmtSign(n: number): string {
     : `₹${n.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 }
 
-// Account ids come back from the API as numbers, but every <select> element's
-// onChange hands back a string (e.target.value) — comparing them with === would
-// silently fail the moment a user changes a dropdown away from its default.
 export function findAccountById(list: Account[], id: string): Account | undefined {
   return list.find(a => String(a.id) === String(id));
 }

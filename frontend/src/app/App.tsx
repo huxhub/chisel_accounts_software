@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { useAccountsController } from "../controllers/useAccountsController";
 
 import Login from "./Login";
@@ -7,6 +8,7 @@ import { Header } from "./components/Header";
 import { Sidebar } from "./components/Sidebar";
 import { Dashboard } from "./components/Dashboard";
 import { RemindersPage } from "./components/RemindersPage";
+import { HistoryPage } from "./components/HistoryPage";
 import { AccountDetail } from "./components/AccountDetail";
 import { DashboardSkeleton } from "./components/DashboardSkeleton";
 import { AccountDetailsSkeleton } from "./components/AccountDetailsSkeleton";
@@ -15,6 +17,7 @@ import { DocumentViewerModal } from "./components/modals/DocumentViewerModal";
 import { AddAccountModal } from "./components/modals/AddAccountModal";
 import { AddTransactionModal } from "./components/modals/AddTransactionModal";
 import { ExchangeModal } from "./components/modals/ExchangeModal";
+import { ProgramModal } from "./components/modals/ProgramModal";
 import { DeleteAccountModal, DeleteTxModal, CompleteReminderModal } from "./components/modals/DeleteConfirmModals";
 import { SettingsModal } from "./components/modals/SettingsModal";
 
@@ -27,12 +30,26 @@ import type { AttachedDoc } from "./types";
 
 export default function App() {
   const { isAuthenticated, setIsAuthenticated, authChecked, handleLogout } = useAuth();
-  const { accounts, loading, addTransaction: handleAddTx, deleteTransaction: handleDelTx, editTransaction: handleEditTx, saveOpeningBalance: handleSaveBal, addAccount: handleAddAccount, editAccountName, deleteAccount: handleDeleteAccount } = useAccountsController(isAuthenticated);
+  const {
+    accounts,
+    programs,
+    loading,
+    addTransaction: handleAddTx,
+    deleteTransaction: handleDelTx,
+    editTransaction: handleEditTx,
+    saveOpeningBalance: handleSaveBal,
+    addAccount: handleAddAccount,
+    editAccountName,
+    deleteAccount: handleDeleteAccount,
+    addProgram,
+    deleteProgram,
+  } = useAccountsController(isAuthenticated);
   const { settings, setSettings, tempSettings, setTempSettings, showSettings, setShowSettings } = useSettings();
 
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [showReport, setShowReport] = useState<boolean>(false);
+  const [showPrograms, setShowPrograms] = useState<boolean>(false);
   const [viewDoc, setViewDoc] = useState<AttachedDoc | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState<boolean>(false);
   const [reminderToComplete, setReminderToComplete] = useState<{ accountId: string; txId: string; description?: string } | null>(null);
@@ -43,13 +60,13 @@ export default function App() {
 
   const handleCompleteReminder = async (accountId: string, txId: string) => {
     const targetAcc = accounts.find(a => a.id === accountId);
-    const targetTx = targetAcc?.transactions.find(t => t.id === txId);
+    const targetTx = targetAcc?.transactions.find((t: any) => t.id === txId);
 
     await handleEditTx(accountId, txId, { isCompleted: true });
 
     if (targetTx?.reference) {
       accounts.forEach(acc => {
-        (acc.transactions || []).forEach(tx => {
+        (acc.transactions || []).forEach((tx: any) => {
           if (tx.reference === targetTx.reference && (tx.id !== txId || acc.id !== accountId)) {
             handleEditTx(acc.id, tx.id, { isCompleted: true });
           }
@@ -59,6 +76,7 @@ export default function App() {
 
     toast.success("Reminder marked as completed!");
   };
+
 
   const promptCompleteReminder = (accountId: string, txId: string, description?: string) => {
     setReminderToComplete({ accountId, txId, description });
@@ -95,6 +113,7 @@ export default function App() {
         setMobileMenuOpen={setMobileMenuOpen}
         onOpenExchange={exForm.openExchangeModal}
         onOpenReport={() => setShowReport(true)}
+        onOpenPrograms={() => setShowPrograms(true)}
       />
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -118,7 +137,9 @@ export default function App() {
           {loading ? (
             activeTab === "dashboard" ? <DashboardSkeleton /> : <AccountDetailsSkeleton />
           ) : activeTab === "dashboard" ? (
-            <Dashboard accounts={accounts} onNavigate={setActiveTab} />
+            <Dashboard accounts={accounts} programs={programs} onNavigate={setActiveTab} onCompleteReminder={promptCompleteReminder} />
+          ) : activeTab === "history" ? (
+            <HistoryPage accounts={accounts} programs={programs} onViewDoc={doc => setViewDoc(doc)} />
           ) : activeTab === "reminders" ? (
             <RemindersPage accounts={accounts} onNavigate={setActiveTab} onAddTransaction={handleAddTx} onDeleteTransaction={txForm.deleteTransaction} onCompleteReminder={promptCompleteReminder} />
           ) : accDetail.activeAccount ? (
@@ -143,7 +164,7 @@ export default function App() {
               setEditingOpening={accDetail.setEditingOpening}
               saveOpeningBalance={accDetail.saveOpeningBalance}
               onOpenAddEntry={() => {
-                const banks = accounts.filter(a => a.type === "bank" || a.type === "overdraft");
+                const banks = accounts.filter(a => a.type === "bank");
                 txForm.setForm((f: any) => ({ ...f, paymentMode: "cash", selectedBankId: banks.length > 0 ? String(banks[0].id) : "" }));
                 txForm.setShowForm(true);
               }}
@@ -160,8 +181,9 @@ export default function App() {
       <ReportModal accounts={accounts} showReport={showReport} setShowReport={setShowReport} />
       <DocumentViewerModal viewDoc={viewDoc} setViewDoc={setViewDoc} />
       <AddAccountModal showAddCompany={accDetail.showAddCompany} setShowAddCompany={accDetail.setShowAddCompany} companyForm={accDetail.companyForm} setCompanyForm={accDetail.setCompanyForm} addCompany={accDetail.addCompany} />
-      <AddTransactionModal showForm={txForm.showForm} setShowForm={txForm.setShowForm} activeAccount={accDetail.activeAccount} accounts={accounts} form={txForm.form} setForm={txForm.setForm} fileInputRef={txForm.fileInputRef} handleFileSelect={txForm.handleFileSelect} addTransaction={txForm.addTransaction} editingTxId={txForm.editingTxId} />
+      <AddTransactionModal showForm={txForm.showForm} setShowForm={txForm.setShowForm} activeAccount={accDetail.activeAccount} accounts={accounts} programs={programs} form={txForm.form} setForm={txForm.setForm} fileInputRef={txForm.fileInputRef} handleFileSelect={txForm.handleFileSelect} addTransaction={txForm.addTransaction} editingTxId={txForm.editingTxId} />
       <ExchangeModal showExchange={exForm.showExchange} setShowExchange={exForm.setShowExchange} exchangeForm={exForm.exchangeForm} setExchangeForm={exForm.setExchangeForm} accounts={accounts} handleExchangeSubmit={exForm.handleExchangeSubmit} />
+      <ProgramModal showPrograms={showPrograms} setShowPrograms={setShowPrograms} programs={programs} onAddProgram={addProgram} onDeleteProgram={deleteProgram} />
       <DeleteAccountModal showDeleteDialog={accDetail.showDeleteDialog} setShowDeleteDialog={accDetail.setShowDeleteDialog} activeAccount={accDetail.activeAccount} deleteConfirmPassword={accDetail.deleteConfirmPassword} setDeleteConfirmPassword={accDetail.setDeleteConfirmPassword} deleteError={accDetail.deleteError} handleDeleteCompany={accDetail.handleDeleteCompany} />
       <DeleteTxModal showDeleteTxDialog={txForm.showDeleteTxDialog} setShowDeleteTxDialog={txForm.setShowDeleteTxDialog} txToDelete={txForm.txToDelete} setTxToDelete={txForm.setTxToDelete} handleDelTx={handleDelTx} />
       <CompleteReminderModal showCompleteModal={showCompleteModal} setShowCompleteModal={setShowCompleteModal} reminderToComplete={reminderToComplete} onConfirmComplete={handleCompleteReminder} />

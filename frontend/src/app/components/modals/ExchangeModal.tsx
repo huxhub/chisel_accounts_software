@@ -98,14 +98,14 @@ export function ExchangeModal({
             <select
               value={exchangeForm.sourceId}
               onChange={e => {
-                const bankAccs = accounts.filter(a => a.type === "bank" || a.type === "overdraft");
+                const bankAccs = accounts.filter(a => a.type === "bank");
                 const nextDestId = bankAccs.find(a => String(a.id) !== e.target.value)?.id ?? "";
                 setExchangeForm({ ...exchangeForm, sourceId: e.target.value, destId: String(nextDestId) === e.target.value ? "" : String(nextDestId) });
               }}
               className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
             >
-              {accounts.filter(acc => acc.type === "bank" || acc.type === "overdraft").length === 0 && <option value="">No bank accounts available</option>}
-              {accounts.filter(acc => acc.type === "bank" || acc.type === "overdraft").map(acc => (<option key={acc.id} value={acc.id}>{acc.name} ({fmtSign(calcBalance(acc))})</option>))}
+              {accounts.filter(acc => acc.type === "bank").length === 0 && <option value="">No bank accounts available</option>}
+              {accounts.filter(acc => acc.type === "bank").map(acc => (<option key={acc.id} value={acc.id}>{acc.name} ({fmtSign(calcBalance(acc))})</option>))}
             </select>
           </div>
 
@@ -116,8 +116,8 @@ export function ExchangeModal({
               onChange={e => setExchangeForm({ ...exchangeForm, destId: e.target.value })}
               className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
             >
-              {accounts.filter(acc => (acc.type === "bank" || acc.type === "overdraft") && String(acc.id) !== exchangeForm.sourceId).length === 0 && <option value="">No other bank accounts</option>}
-              {accounts.filter(acc => (acc.type === "bank" || acc.type === "overdraft") && String(acc.id) !== exchangeForm.sourceId).map(acc => (<option key={acc.id} value={acc.id}>{acc.name} ({fmtSign(calcBalance(acc))})</option>))}
+              {accounts.filter(acc => acc.type === "bank" && String(acc.id) !== exchangeForm.sourceId).length === 0 && <option value="">No other bank accounts</option>}
+              {accounts.filter(acc => acc.type === "bank" && String(acc.id) !== exchangeForm.sourceId).map(acc => (<option key={acc.id} value={acc.id}>{acc.name} ({fmtSign(calcBalance(acc))})</option>))}
             </select>
           </div>
 

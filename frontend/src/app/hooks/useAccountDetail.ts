@@ -54,9 +54,14 @@ export function useAccountDetail(
 
   const activeAccountReminders = useMemo(() => {
     if (!activeAccount) return [];
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayObj = new Date();
+    todayObj.setHours(0, 0, 0, 0);
+    const targetDateObj = new Date(todayObj);
+    targetDateObj.setDate(targetDateObj.getDate() + 5);
+    const targetDateStr = targetDateObj.toISOString().split("T")[0];
+
     return activeAccount.transactions
-      .filter((tx: any) => tx.dueDate && !tx.isCompleted && tx.dueDate <= todayStr)
+      .filter((tx: any) => tx.dueDate && !tx.isCompleted && tx.dueDate <= targetDateStr)
       .map((tx: any) => ({
         ...tx,
         accountId: activeAccount.id,
@@ -69,7 +74,7 @@ export function useAccountDetail(
 
   const normalTransactions = useMemo(() => {
     if (!activeAccount) return [];
-    return activeAccount.transactions.filter((tx: any) => !tx.exchangeType && !tx.isReminder && !tx.dueDate);
+    return activeAccount.transactions.filter((tx: any) => !tx.exchangeType && !tx.isReminder);
   }, [activeAccount]);
 
   const exchangeTransactions = useMemo(() => {

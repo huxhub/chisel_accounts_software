@@ -1,16 +1,16 @@
 import { TrendingUp, TrendingDown, Upload, Image, FileText, X } from "lucide-react";
-import type { Account } from "../../types";
+import type { Account, Program } from "../../types";
 import { fmt, calcBalance } from "../../types";
 
 export function AddTransactionModal({
   showForm, setShowForm, activeAccount, accounts, form, setForm,
-  fileInputRef, handleFileSelect, addTransaction, editingTxId,
+  fileInputRef, handleFileSelect, addTransaction, editingTxId, programs = [],
 }: {
   showForm: boolean; setShowForm: (v: boolean) => void;
   activeAccount: Account | undefined; accounts: Account[]; form: any;
-  setForm: React.Dispatch<React.SetStateAction<any>>; fileInputRef: React.RefObject<HTMLInputElement>;
+  setForm: React.Dispatch<React.SetStateAction<any>>; fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void; addTransaction: () => void;
-  editingTxId?: string | null;
+  editingTxId?: string | null; programs?: Program[];
 }) {
   if (!showForm || !activeAccount) return null;
   const isCompanyOrOD = activeAccount.type === "company" || activeAccount.type === "overdraft";
@@ -55,7 +55,7 @@ export function AddTransactionModal({
             <div>
               <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Select Bank Account</label>
               <select value={form.selectedBankId} onChange={e => setForm((f: any) => ({ ...f, selectedBankId: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background">
-                {accounts.filter(a => a.type === "bank" || a.type === "overdraft").map(acc => (
+                {accounts.filter(a => a.type === "bank").map(acc => (
                   <option key={acc.id} value={acc.id}>{acc.name} ({fmt(calcBalance(acc))})</option>
                 ))}
               </select>
@@ -70,6 +70,23 @@ export function AddTransactionModal({
           <div>
             <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Description</label>
             <input type="text" value={form.description} onChange={e => setForm((f: any) => ({ ...f, description: e.target.value }))} placeholder="Transaction description..." className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background" />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center justify-between mb-1.5">
+              <span>Program / Category</span>
+              <span className="font-normal text-muted-foreground/60 lowercase">(optional)</span>
+            </label>
+            <select
+              value={form.programId || ""}
+              onChange={e => setForm((f: any) => ({ ...f, programId: e.target.value }))}
+              className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background"
+            >
+              <option value="">-- No Program --</option>
+              {programs.map(prog => (
+                <option key={prog.id} value={prog.id}>{prog.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>

@@ -1,5 +1,5 @@
-import { Plus, Trash2, Edit3, Check, X, Bell, FileText } from "lucide-react";
-import { toast } from "sonner";
+import { useState } from "react";
+import { Plus, Trash2, Edit3, Check, X, Bell } from "lucide-react";
 import type { Account, AttachedDoc } from "../types";
 import { accountTypeIcon, accountTypeLabel, fmt, fmtSign, calcBalance, calcTotalCredit, calcTotalDebit } from "../types";
 import { TransactionsTable } from "./TransactionsTable";
@@ -59,6 +59,29 @@ export function AccountDetail({
   onNavigateToReminders: () => void;
 }) {
   const Icon = accountTypeIcon(activeAccount.type);
+  const [dismissedReminderIds, setDismissedReminderIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("dismissed_reminders");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const handleDismissReminder = (id: string) => {
+    setDismissedReminderIds(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      try {
+        localStorage.setItem("dismissed_reminders", JSON.stringify(Array.from(next)));
+      } catch {
+        // fallback
+      }
+      return next;
+    });
+  };
+
+  const visibleReminders = activeAccountReminders.filter((rem: any) => !dismissedReminderIds.has(rem.id));
 
   return (
     <div className="p-6 space-y-5 w-full">
@@ -112,14 +135,24 @@ export function AccountDetail({
       </div>
 
       {/* Reminders section / Alert Boxes */}
-      {activeAccountReminders.length > 0 && (
+      {visibleReminders.length > 0 && (
         <div className="space-y-3">
-          {activeAccountReminders.map((rem: any) => {
+          {visibleReminders.map((rem: any) => {
             const todayStr = new Date().toISOString().split("T")[0];
             const isOverdue = rem.dueDate < todayStr;
+            const isDueToday = rem.dueDate === todayStr;
             const diffTime = new Date(rem.dueDate).getTime() - new Date(todayStr).getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const statusText = isOverdue ? `Overdue by ${Math.abs(diffDays)} days` : "Due Today";
+            const statusText = isOverdue
+              ? `Overdue by ${Math.abs(diffDays)} days`
+              : isDueToday
+              ? "Due Today"
+              : `Due in ${diffDays} days`;
+            const badgeClass = isOverdue
+              ? "bg-rose-50 text-rose-700 border-rose-200"
+              : isDueToday
+              ? "bg-amber-50 text-amber-800 border-amber-200"
+              : "bg-blue-50 text-blue-700 border-blue-200";
 
             return (
               <div key={rem.id} className="bg-white border border-red-200 rounded-2xl p-4 sm:p-5 flex items-start justify-between gap-4 shadow-3xs">
@@ -128,15 +161,18 @@ export function AccountDetail({
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-bold text-sm text-slate-900">{rem.description}</h4>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${isOverdue ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-amber-50 text-amber-800 border-amber-200"}`}>{statusText}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${badgeClass}`}>{statusText}</span>
                     </div>
-                    <p className="text-xs text-slate-500 mt-1">Scheduled due date: <span className="font-mono font-semibold text-slate-700">{rem.dueDate.split("-").reverse().join("/")}</span></p>
-                    <button onClick={onNavigateToReminders} className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mt-2.5 transition-colors">Review Reminders <span className="text-sm">→</span></button>
+                    <p className="text-xs text-slate-500 mt-1 font-mono">
+                      Scheduled due date: <span className="font-semibold text-slate-700">{rem.dueDate.split("-").reverse().join("/")}</span>
+                      {rem.amount > 0 && <span className="ml-2 font-bold text-slate-900">₹{rem.amount.toLocaleString("en-IN")}</span>}
+                    </p>
+                    <button onClick={onNavigateToReminders} className="text-xs font-semibold text-red-600 hover:text-red-700 inline-flex items-center gap-1 mt-2.5 transition-colors">Review Reminders <span className="text-sm">→</span></button>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button onClick={() => { if (onCompleteReminder) onCompleteReminder(activeAccount.id, rem.id); else onDeleteTransaction(rem.id); }} className="w-8 h-8 rounded-full border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center justify-center transition-colors shadow-2xs" title="Mark as Done"><Check size={15} /></button>
-                  <button onClick={() => onDeleteTransaction(rem.id)} className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors" title="Dismiss Alert"><X size={15} /></button>
+                  <button onClick={() => handleDismissReminder(rem.id)} className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors" title="Dismiss Alert"><X size={15} /></button>
                 </div>
               </div>
             );

@@ -1,10 +1,20 @@
 import { useMemo } from "react";
-import { TrendingUp, TrendingDown, ChevronRight, ArrowUpRight, ArrowDownRight, Wallet, Activity } from "lucide-react";
-import type { Account } from "../types";
-import { calcBalance, calcTotalCredit, calcTotalDebit, fmtSign, accountTypeIcon, CHART_COLORS } from "../types";
+import { TrendingUp, TrendingDown, ChevronRight, ArrowUpRight, ArrowDownRight, Wallet, Activity, Tag, Bell, Check } from "lucide-react";
+import type { Account, Program } from "../types";
+import { calcBalance, calcTotalCredit, calcTotalDebit, fmtSign, accountTypeIcon, CHART_COLORS, fmt } from "../types";
 import { DashboardTransfersLog } from "./DashboardTransfersLog";
 
-export function Dashboard({ accounts, onNavigate }: { accounts: Account[]; onNavigate: (id: string) => void }) {
+export function Dashboard({
+  accounts,
+  programs = [],
+  onNavigate,
+  onCompleteReminder,
+}: {
+  accounts: Account[];
+  programs?: Program[];
+  onNavigate: (id: string) => void;
+  onCompleteReminder?: (accountId: string, txId: string) => void;
+}) {
   const totalOpening = accounts.reduce((s, a) => s + a.openingBalance, 0);
   const totalCredit = accounts.reduce((s, a) => s + calcTotalCredit(a), 0);
   const totalDebit = accounts.reduce((s, a) => s + calcTotalDebit(a), 0);
@@ -34,14 +44,66 @@ export function Dashboard({ accounts, onNavigate }: { accounts: Account[]; onNav
     });
   }, [accounts]);
 
+  const upcomingReminders = useMemo(() => {
+    const todayObj = new Date();
+    todayObj.setHours(0, 0, 0, 0);
+    const targetDateObj = new Date(todayObj);
+    targetDateObj.setDate(targetDateObj.getDate() + 5);
+    const targetDateStr = targetDateObj.toISOString().split("T")[0];
+
+    const list: any[] = [];
+    const seenRefs = new Set<string>();
+    accounts.forEach(a => {
+      const idx = accounts.findIndex(acc => acc.id === a.id);
+      const color = CHART_COLORS[idx % CHART_COLORS.length];
+      (a.transactions || []).forEach((tx: any) => {
+        if (tx.dueDate && !tx.isCompleted && tx.dueDate <= targetDateStr) {
+          if (tx.reference && (tx.reference.startsWith("EX-") || tx.exchangeType)) {
+            if (seenRefs.has(tx.reference)) return;
+            seenRefs.add(tx.reference);
+          }
+          list.push({ ...tx, accountId: a.id, accountName: a.name, accountColor: color, accountBg: a.bgColor });
+        }
+      });
+    });
+    return list.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  }, [accounts]);
+
   const recentTxs = accounts
     .flatMap(a => {
       const idx = accounts.findIndex(acc => acc.id === a.id);
       const color = CHART_COLORS[idx % CHART_COLORS.length];
-      return a.transactions.map(tx => ({ ...tx, accountId: a.id, accountName: a.name, accountColor: color, accountBg: a.bgColor }));
+      return a.transactions
+        .filter(tx => !tx.isReminder)
+        .map(tx => ({ ...tx, accountId: a.id, accountName: a.name, accountColor: color, accountBg: a.bgColor }));
     })
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, 8);
+
+  const programSummaries = useMemo(() => {
+    if (!programs || programs.length === 0) return [];
+    const map = new Map<number, { id: number; name: string; color: string; credit: number; debit: number; net: number; count: number }>();
+    programs.forEach(p => {
+      map.set(p.id, { id: p.id, name: p.name, color: p.color, credit: 0, debit: 0, net: 0, count: 0 });
+    });
+
+    accounts.forEach(acc => {
+      (acc.transactions || []).forEach((tx: any) => {
+        if (tx.programId && map.has(Number(tx.programId))) {
+          const item = map.get(Number(tx.programId))!;
+          item.count += 1;
+          if (tx.type === "credit") {
+            item.credit += tx.amount;
+          } else {
+            item.debit += tx.amount;
+          }
+          item.net = item.credit - item.debit;
+        }
+      });
+    });
+
+    return Array.from(map.values());
+  }, [accounts, programs]);
 
   const kpis = [
     { label: "Opening Balance", value: fmtSign(totalOpening), icon: Wallet, bg: "bg-blue-50", iconColor: "text-blue-600", border: "border-blue-100", valueColor: "text-blue-700" },
@@ -73,6 +135,106 @@ export function Dashboard({ accounts, onNavigate }: { accounts: Account[]; onNav
           </div>
         ))}
       </div>
+
+      {/* Upcoming & Overdue Reminders */}
+      {upcomingReminders.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+              <Bell size={15} className="text-red-600 animate-pulse" /> Upcoming & Overdue Reminders
+            </h3>
+            <button onClick={() => onNavigate("reminders")} className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors">
+              View All ({upcomingReminders.length}) <ChevronRight size={14} />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            {upcomingReminders.map(rem => {
+              const todayStr = new Date().toISOString().split("T")[0];
+              const isOverdue = rem.dueDate < todayStr;
+              const isDueToday = rem.dueDate === todayStr;
+              const diffTime = new Date(rem.dueDate).getTime() - new Date(todayStr).getTime();
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              const statusText = isOverdue ? `Overdue by ${Math.abs(diffDays)}d` : isDueToday ? "Due Today" : `Due in ${diffDays}d`;
+              const badgeClass = isOverdue ? "bg-rose-50 text-rose-700 border-rose-200" : isDueToday ? "bg-amber-50 text-amber-800 border-amber-200" : "bg-blue-50 text-blue-700 border-blue-200";
+
+              return (
+                <div key={rem.id} className="bg-white rounded-xl border border-red-100 p-3.5 flex items-start justify-between gap-3 shadow-2xs hover:shadow-xs transition-all">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-white truncate max-w-[120px]" style={{ backgroundColor: rem.accountColor }}>
+                        {rem.accountName}
+                      </span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${badgeClass}`}>
+                        {statusText}
+                      </span>
+                    </div>
+                    <div className="text-xs font-semibold text-slate-800 truncate" title={rem.description}>
+                      {rem.description}
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-mono mt-1">
+                      Due: {rem.dueDate.split("-").reverse().join("/")}
+                      {rem.amount > 0 && <span className="ml-2 font-semibold text-slate-700">₹{rem.amount.toLocaleString("en-IN")}</span>}
+                    </div>
+                  </div>
+                  {onCompleteReminder && (
+                    <button
+                      onClick={() => onCompleteReminder(rem.accountId, rem.id)}
+                      className="w-7 h-7 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 flex items-center justify-center transition-colors flex-shrink-0 mt-0.5"
+                      title="Mark as Done"
+                    >
+                      <Check size={14} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Program Summary Section */}
+      {programSummaries.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+              <Tag size={15} className="text-indigo-600" /> Program Financial Summary
+            </h3>
+            <span className="text-xs text-muted-foreground font-medium">{programSummaries.length} Programs</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+            {programSummaries.map(prog => (
+              <div key={prog.id} className="bg-white rounded-xl border border-border p-4 space-y-2 shadow-2xs hover:shadow-xs transition-all">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: prog.color }} />
+                    <span className="text-sm font-bold text-foreground truncate max-w-[150px]">{prog.name}</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 font-mono text-slate-600">
+                    {prog.count} txns
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-100">
+                  <div>
+                    <div className="text-[10px] text-muted-foreground">Credited</div>
+                    <div className="text-xs font-mono font-semibold text-emerald-600">+₹{fmt(prog.credit)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-muted-foreground">Debited</div>
+                    <div className="text-xs font-mono font-semibold text-red-500">-₹{fmt(prog.debit)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-muted-foreground">Net Cash</div>
+                    <div className={`text-xs font-mono font-bold ${prog.net >= 0 ? "text-indigo-600" : "text-red-600"}`}>
+                      {fmtSign(prog.net)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         <h3 className="font-semibold text-sm text-foreground">Company Balances</h3>

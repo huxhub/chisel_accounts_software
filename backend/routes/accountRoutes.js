@@ -9,13 +9,15 @@ import {
   updateTransaction,
   seedAccounts,
   clearAccounts,
-  deleteAccount
+  deleteAccount,
+  getHistory,
 } from '../controllers/accountController.js';
 import { requireAdmin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 router.route('/').get(getAccounts).post(createAccount);
+router.route('/history').get(getHistory);
 router.route('/seed').post(seedAccounts);
 router.route('/clear').delete(requireAdmin, clearAccounts);
 router.route('/:id').put(updateAccount).delete(deleteAccount);

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { accountService } from '../services/api';
+import { programService } from '../services/programService';
 import { getErrorMessage } from '../services/errors';
+import type { Program } from '../app/types';
 
 export const useAccountsController = (isAuthenticated: boolean) => {
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAccounts = async () => {
@@ -19,13 +22,49 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     }
   };
 
+  const fetchPrograms = async () => {
+    try {
+      const data = await programService.getPrograms();
+      setPrograms(data);
+    } catch (error) {
+      // Programs fetch failure shouldn't block the rest of the app
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchAccounts();
+      fetchPrograms();
     } else {
       setAccounts([]);
+      setPrograms([]);
     }
   }, [isAuthenticated]);
+
+  const addProgram = async (name: string, color: string = '#6366f1') => {
+    try {
+      const newProgram = await programService.createProgram(name, color);
+      setPrograms(prev => [...prev, newProgram].sort((a, b) => a.name.localeCompare(b.name)));
+      toast.success(`Program "${name}" created`);
+      return true;
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to create program.'));
+      return false;
+    }
+  };
+
+  const deleteProgram = async (id: number) => {
+    try {
+      await programService.deleteProgram(id);
+      setPrograms(prev => prev.filter(p => p.id !== id));
+      toast.success('Program deleted');
+      fetchAccounts();
+      return true;
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete program.'));
+      return false;
+    }
+  };
 
   const addTransaction = async (accountId: string, transaction: any, options?: { silent?: boolean }) => {
     try {
@@ -123,13 +162,13 @@ export const useAccountsController = (isAuthenticated: boolean) => {
       toast.success('Account deleted');
       return { success: true };
     } catch (error) {
-      // No toast here — the delete-confirmation dialog surfaces this message inline.
       return { success: false, message: getErrorMessage(error, 'Failed to delete account.') };
     }
   };
 
   return {
     accounts,
+    programs,
     loading,
     addAccount,
     editAccountName,
@@ -137,6 +176,8 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     addTransaction,
     deleteTransaction,
     editTransaction,
-    saveOpeningBalance
+    saveOpeningBalance,
+    addProgram,
+    deleteProgram,
   };
 };

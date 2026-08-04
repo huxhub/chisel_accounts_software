@@ -1,6 +1,7 @@
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from '../config/db.js';
 import Account from './Account.js';
+import Program from './Program.js';
 
 class Transaction extends Model {}
 
@@ -54,6 +55,14 @@ Transaction.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },
+    programId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: Program,
+        key: 'id',
+      },
+    },
   },
   {
     sequelize,
@@ -64,4 +73,8 @@ Transaction.init(
 Account.hasMany(Transaction, { foreignKey: 'accountId', onDelete: 'CASCADE' });
 Transaction.belongsTo(Account, { foreignKey: 'accountId' });
 
+Program.hasMany(Transaction, { foreignKey: 'programId', onDelete: 'SET NULL' });
+Transaction.belongsTo(Program, { foreignKey: 'programId' });
+
 export default Transaction;
+

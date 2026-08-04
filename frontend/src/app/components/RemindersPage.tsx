@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Bell, Trash2, Check, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Account } from "../types";
+import { fmt } from "../types";
 
 export function RemindersPage({
   accounts,
@@ -96,6 +97,7 @@ export function RemindersPage({
                   <th className="px-4 py-3 text-left font-semibold">Date Created</th>
                   <th className="px-4 py-3 text-left font-semibold">Due Date</th>
                   <th className="px-4 py-3 text-left font-semibold">Description</th>
+                  <th className="px-4 py-3 text-right font-semibold">Amount (₹)</th>
                   <th className="px-4 py-3 text-center font-semibold">Status</th>
                   <th className="px-4 py-3 text-center w-16">Actions</th>
                 </tr>
@@ -113,6 +115,13 @@ export function RemindersPage({
                       <td className="px-4 py-3.5 text-xs font-mono text-muted-foreground">{rem.date.split("-").reverse().join("/")}</td>
                       <td className="px-4 py-3.5 text-xs font-mono font-bold text-foreground">{rem.dueDate.split("-").reverse().join("/")}</td>
                       <td className="px-4 py-3.5 font-medium text-gray-800">{rem.description}</td>
+                      <td className="px-4 py-3.5 text-right font-mono font-semibold">
+                        {rem.amount && rem.amount > 0 ? (
+                          <span className="text-slate-800">₹{fmt(rem.amount)}</span>
+                        ) : (
+                          <span className="text-muted-foreground/40">—</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3.5 text-center"><span className={`text-[10px] px-2 py-0.5 rounded-full border ${statusClass} font-semibold`}>{statusLabel}</span></td>
                       <td className="px-4 py-3.5 text-center">
                         <div className="flex items-center justify-center gap-1.5">

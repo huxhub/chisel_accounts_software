@@ -1,6 +1,8 @@
-import { Settings, X, Check } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Settings, X, Check, User, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import type { AppSettings } from "../../hooks/useSettings";
+import { authService } from "../../../services/authService";
 
 export function SettingsModal({
   showSettings,
@@ -17,6 +19,24 @@ export function SettingsModal({
   tempSettings: AppSettings;
   setTempSettings: React.Dispatch<React.SetStateAction<AppSettings>>;
 }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [initialUsername, setInitialUsername] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (showSettings) {
+      authService.getCurrentUser().then(u => {
+        if (u?.username) {
+          setUsername(u.username);
+          setInitialUsername(u.username);
+        }
+      });
+      setPassword("");
+    }
+  }, [showSettings]);
+
   if (!showSettings) return null;
 
   const PRESETS = [
@@ -38,7 +58,7 @@ export function SettingsModal({
             </div>
             <div>
               <h3 className="font-bold text-base text-white tracking-wide">Application Settings</h3>
-              <p className="text-xs text-white/70">Customize branding & theme</p>
+              <p className="text-xs text-white/70">Customize branding & credentials</p>
             </div>
           </div>
           <button onClick={() => setShowSettings(false)} className="text-white/60 hover:text-white hover:bg-white/10 p-1.5 rounded-lg transition-all">
@@ -109,6 +129,50 @@ export function SettingsModal({
               </div>
             </div>
           </div>
+
+          {/* Account Credentials Section */}
+          <div className="pt-4 border-t border-border/80 space-y-4">
+            <div className="flex items-center gap-2">
+              <User size={15} className="text-primary font-bold" />
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Account Credentials</h4>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Username</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  placeholder="Enter new username"
+                  className="w-full border border-border rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent bg-white transition-all shadow-3xs font-semibold text-foreground pl-9"
+                />
+                <User size={16} className="absolute left-3 top-3.5 text-muted-foreground/60" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Password</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Enter new password (leave blank to keep current)"
+                  className="w-full border border-border rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent bg-white transition-all shadow-3xs text-foreground pl-9 pr-10"
+                />
+                <Lock size={16} className="absolute left-3 top-3.5 text-muted-foreground/60" />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3.5 text-muted-foreground/60 hover:text-foreground transition-colors"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="px-6 py-5 border-t border-border flex gap-3 bg-white">
@@ -121,16 +185,37 @@ export function SettingsModal({
           </button>
           <button
             type="button"
-            onClick={() => {
-              setSettings(tempSettings);
-              localStorage.setItem("chisel_settings", JSON.stringify(tempSettings));
-              setShowSettings(false);
-              toast.success("Branding settings saved successfully!");
+            disabled={isSaving}
+            onClick={async () => {
+              setIsSaving(true);
+              try {
+                setSettings(tempSettings);
+                localStorage.setItem("chisel_settings", JSON.stringify(tempSettings));
+
+                const usernameChanged = username.trim() !== "" && username.trim() !== initialUsername;
+                const passwordChanged = password.trim() !== "";
+
+                if (usernameChanged || passwordChanged) {
+                  await authService.updateCredentials({
+                    username: usernameChanged ? username.trim() : undefined,
+                    password: passwordChanged ? password.trim() : undefined,
+                  });
+                  toast.success("Settings & account credentials saved!");
+                } else {
+                  toast.success("Branding settings saved successfully!");
+                }
+
+                setShowSettings(false);
+              } catch (error: any) {
+                toast.error(error.message || "Failed to update settings");
+              } finally {
+                setIsSaving(false);
+              }
             }}
-            className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-95 hover:scale-[1.01] active:scale-[0.98] shadow-md shadow-accent/15"
+            className="flex-1 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-95 hover:scale-[1.01] active:scale-[0.98] shadow-md shadow-accent/15 disabled:opacity-50"
             style={{ backgroundColor: tempSettings.themeColor }}
           >
-            Save Settings
+            {isSaving ? "Saving..." : "Save Settings"}
           </button>
         </div>
       </div>

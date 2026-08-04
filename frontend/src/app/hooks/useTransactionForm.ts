@@ -13,6 +13,7 @@ interface TransactionForm {
   dueDate: string;
   paymentMode: "cash" | "bank";
   selectedBankId: string;
+  programId: string;
 }
 
 const INITIAL_FORM: TransactionForm = {
@@ -25,6 +26,7 @@ const INITIAL_FORM: TransactionForm = {
   dueDate: "",
   paymentMode: "cash",
   selectedBankId: "",
+  programId: "",
 };
 
 export function useTransactionForm(
@@ -73,6 +75,7 @@ export function useTransactionForm(
       dueDate: tx.dueDate || "",
       paymentMode: "cash",
       selectedBankId: "",
+      programId: tx.programId ? String(tx.programId) : "",
     });
     setShowForm(true);
   };
@@ -85,7 +88,7 @@ export function useTransactionForm(
     if (!activeAccount) return;
 
     const isCompanyOrOD = activeAccount.type === "company" || activeAccount.type === "overdraft";
-    const selectedBank = isCompanyOrOD && form.paymentMode === "bank"
+    const selectedBank = isCompanyOrOD && form.paymentMode === "bank" && String(form.selectedBankId) !== String(activeAccount.id)
       ? findAccountById(accounts, form.selectedBankId)
       : null;
 
@@ -101,6 +104,7 @@ export function useTransactionForm(
       reference: form.reference || undefined,
       document: form.document || undefined,
       dueDate: form.dueDate || undefined,
+      programId: form.programId ? Number(form.programId) : undefined,
     };
 
     let result;
@@ -108,7 +112,7 @@ export function useTransactionForm(
       result = await handleEditTx(activeTab, editingTxId, tx);
     } else {
       result = await handleAddTx(activeTab, tx);
-      if (result && isCompanyOrOD && form.paymentMode === "bank" && selectedBank) {
+      if (result && isCompanyOrOD && form.paymentMode === "bank" && selectedBank && String(selectedBank.id) !== String(activeAccount.id)) {
         const bankTx = {
           date: form.date,
           description: `${activeAccount.name}: ${form.description}`,
@@ -117,6 +121,7 @@ export function useTransactionForm(
           reference: form.reference || undefined,
           document: form.document || undefined,
           dueDate: form.dueDate || undefined,
+          programId: form.programId ? Number(form.programId) : undefined,
         };
         await handleAddTx(String(selectedBank.id), bankTx, { silent: true });
       }
