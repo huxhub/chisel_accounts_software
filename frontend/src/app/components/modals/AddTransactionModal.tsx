@@ -13,7 +13,7 @@ export function AddTransactionModal({
   editingTxId?: string | null; programs?: Program[];
 }) {
   if (!showForm || !activeAccount) return null;
-  const isCompanyOrOD = activeAccount.type === "company" || activeAccount.type === "overdraft";
+  const isCompanyODOrCash = activeAccount.type === "company" || activeAccount.type === "overdraft" || activeAccount.type === "cash";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -41,25 +41,62 @@ export function AddTransactionModal({
             </div>
           </div>
 
-          {isCompanyOrOD && (
+          {activeAccount.type === "cash" ? (
             <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Paid Via</label>
-              <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setForm((f: any) => ({ ...f, paymentMode: "cash" }))} className={`py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border transition-all ${form.paymentMode === "cash" ? "bg-accent/10 border-accent text-accent" : "border-border text-muted-foreground hover:border-gray-300"}`}>Cash</button>
-                <button type="button" onClick={() => setForm((f: any) => ({ ...f, paymentMode: "bank" }))} className={`py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border transition-all ${form.paymentMode === "bank" ? "bg-accent/10 border-accent text-accent" : "border-border text-muted-foreground hover:border-gray-300"}`}>Bank Account</button>
-              </div>
-            </div>
-          )}
-
-          {isCompanyOrOD && form.paymentMode === "bank" && (
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Select Bank Account</label>
-              <select value={form.selectedBankId} onChange={e => setForm((f: any) => ({ ...f, selectedBankId: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">
+                {form.type === "credit"
+                  ? "Bank Source (Cash Withdrawn from Bank)"
+                  : "Bank Destination (Cash Deposited to Bank)"}
+              </label>
+              <select
+                value={form.paymentMode === "bank" ? form.selectedBankId : ""}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val) {
+                    setForm((f: any) => ({ ...f, paymentMode: "bank", selectedBankId: val }));
+                  } else {
+                    setForm((f: any) => ({ ...f, paymentMode: "cash", selectedBankId: "" }));
+                  }
+                }}
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background font-medium"
+              >
+                <option value="">-- Direct Cash / Hand-in-Hand (No Bank) --</option>
                 {accounts.filter(a => a.type === "bank").map(acc => (
-                  <option key={acc.id} value={acc.id}>{acc.name} ({fmt(calcBalance(acc))})</option>
+                  <option key={acc.id} value={acc.id}>
+                    {acc.name} ({fmt(calcBalance(acc))})
+                  </option>
                 ))}
               </select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {form.paymentMode === "bank" && form.selectedBankId
+                  ? form.type === "credit"
+                    ? "Money will be withdrawn (debited) from the selected bank into cash."
+                    : "Money will be deposited (credited) into the selected bank from cash."
+                  : "Recorded directly as physical cash transaction."}
+              </p>
             </div>
+          ) : (
+            (activeAccount.type === "company" || activeAccount.type === "overdraft") && (
+              <>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Paid Via</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button type="button" onClick={() => setForm((f: any) => ({ ...f, paymentMode: "cash" }))} className={`py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border transition-all ${form.paymentMode === "cash" ? "bg-accent/10 border-accent text-accent" : "border-border text-muted-foreground hover:border-gray-300"}`}>Cash</button>
+                    <button type="button" onClick={() => setForm((f: any) => ({ ...f, paymentMode: "bank" }))} className={`py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 border transition-all ${form.paymentMode === "bank" ? "bg-accent/10 border-accent text-accent" : "border-border text-muted-foreground hover:border-gray-300"}`}>Bank Account</button>
+                  </div>
+                </div>
+                {form.paymentMode === "bank" && (
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Select Bank Account</label>
+                    <select value={form.selectedBankId} onChange={e => setForm((f: any) => ({ ...f, selectedBankId: e.target.value }))} className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background">
+                      {accounts.filter(a => a.type === "bank").map(acc => (
+                        <option key={acc.id} value={acc.id}>{acc.name} ({fmt(calcBalance(acc))})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </>
+            )
           )}
 
           <div>

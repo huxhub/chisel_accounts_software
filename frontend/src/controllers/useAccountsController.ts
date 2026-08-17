@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { accountService } from '../services/api';
 import { programService } from '../services/programService';
+import { ledgerService } from '../services/ledgerService';
 import { getErrorMessage } from '../services/errors';
-import type { Program } from '../app/types';
+import type { Program, Ledger } from '../app/types';
 
 export const useAccountsController = (isAuthenticated: boolean) => {
   const [accounts, setAccounts] = useState<any[]>([]);
   const [programs, setPrograms] = useState<Program[]>([]);
+  const [ledgers, setLedgers] = useState<Ledger[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAccounts = async () => {
@@ -31,15 +33,26 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     }
   };
 
+  const fetchLedgers = useCallback(async () => {
+    try {
+      const data = await ledgerService.getLedgers();
+      setLedgers(data);
+    } catch (error) {
+      // non-blocking
+    }
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchAccounts();
       fetchPrograms();
+      fetchLedgers();
     } else {
       setAccounts([]);
       setPrograms([]);
+      setLedgers([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchLedgers]);
 
   const addProgram = async (name: string, color: string = '#6366f1') => {
     try {
@@ -166,9 +179,73 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     }
   };
 
+  const addLedger = async (data: { name: string; type: 'vendor' | 'customer'; openingBalance?: number; openingType?: 'debit' | 'credit' }) => {
+    try {
+      const l = await ledgerService.createLedger(data);
+      setLedgers(prev => [...prev, l].sort((a, b) => a.name.localeCompare(b.name)));
+      toast.success(`${l.type === 'vendor' ? 'Vendor' : 'Customer'} "${l.name}" created`);
+      return l;
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to create ledger.'));
+      return null;
+    }
+  };
+
+  const deleteLedger = async (id: number) => {
+    try {
+      await ledgerService.deleteLedger(id);
+      setLedgers(prev => prev.filter(l => l.id !== id));
+      fetchAccounts();
+      toast.success('Ledger deleted');
+      return true;
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete ledger.'));
+      return false;
+    }
+  };
+
+  const addVoucher = async (data: {
+    type: 'purchase' | 'sale' | 'payment' | 'receipt';
+    ledgerId: number;
+    accountId?: string | number | null;
+    date: string;
+    itemName?: string;
+    amount: number;
+    note?: string;
+    programId?: number | null;
+    document?: any;
+  }) => {
+    try {
+      const voucher = await ledgerService.createVoucher(data);
+      toast.success(`${data.type.toUpperCase()} voucher created`);
+      fetchLedgers();
+      if (data.type === 'payment' || data.type === 'receipt') {
+        fetchAccounts();
+      }
+      return voucher;
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to create voucher.'));
+      return null;
+    }
+  };
+
+  const deleteVoucher = async (id: number) => {
+    try {
+      await ledgerService.deleteVoucher(id);
+      toast.success('Voucher deleted');
+      fetchLedgers();
+      fetchAccounts();
+      return true;
+    } catch (error) {
+      toast.error(getErrorMessage(error, 'Failed to delete voucher.'));
+      return false;
+    }
+  };
+
   return {
     accounts,
     programs,
+    ledgers,
     loading,
     addAccount,
     editAccountName,
@@ -179,5 +256,10 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     saveOpeningBalance,
     addProgram,
     deleteProgram,
+    addLedger,
+    deleteLedger,
+    addVoucher,
+    deleteVoucher,
+    fetchLedgers,
   };
 };

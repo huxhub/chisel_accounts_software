@@ -63,6 +63,14 @@ Transaction.init(
         key: 'id',
       },
     },
+    vendorOrCustomerName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    relatedItemName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   },
   {
     sequelize,

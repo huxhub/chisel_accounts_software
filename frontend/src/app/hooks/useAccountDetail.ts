@@ -74,7 +74,14 @@ export function useAccountDetail(
 
   const normalTransactions = useMemo(() => {
     if (!activeAccount) return [];
-    return activeAccount.transactions.filter((tx: any) => !tx.exchangeType && !tx.isReminder);
+    const list = activeAccount.transactions.filter((tx: any) => !tx.isReminder);
+    return [...list].sort((a: any, b: any) => {
+      const dateCmp = (a.date || "").localeCompare(b.date || "");
+      if (dateCmp !== 0) return dateCmp;
+      const createdCmp = (a.createdAt || "").localeCompare(b.createdAt || "");
+      if (createdCmp !== 0) return createdCmp;
+      return String(a.id || "").localeCompare(String(b.id || ""));
+    });
   }, [activeAccount]);
 
   const exchangeTransactions = useMemo(() => {
@@ -96,8 +103,8 @@ export function useAccountDetail(
   // ── Actions ──
   const addCompany = async () => {
     if (!companyForm.name.trim()) { toast.warning("Please enter a name."); return; }
-    const bgColor = companyForm.type === "overdraft" ? "#ffe4e6" : companyForm.type === "bank" ? "#ccfbf1" : "#e8edf5";
-    const color = companyForm.type === "overdraft" ? "#9f1239" : companyForm.type === "bank" ? "#0f766e" : "#1e3a5f";
+    const bgColor = companyForm.type === "overdraft" ? "#ffe4e6" : companyForm.type === "bank" ? "#ccfbf1" : companyForm.type === "cash" ? "#fef3c7" : "#e8edf5";
+    const color = companyForm.type === "overdraft" ? "#9f1239" : companyForm.type === "bank" ? "#0f766e" : companyForm.type === "cash" ? "#b45309" : "#1e3a5f";
     const newId = await handleAddAccount({
       ...companyForm,
       openingBalance: parseFloat(companyForm.openingBalance) || 0,

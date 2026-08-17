@@ -1,4 +1,4 @@
-import { LayoutDashboard, Bell, ChevronRight, Settings, LogOut, History, Plus } from "lucide-react";
+import { LayoutDashboard, Bell, ChevronRight, Settings, LogOut, History, Plus, BookOpen } from "lucide-react";
 import type { Account } from "../types";
 import { calcBalance, fmtSign, accountTypeIcon } from "../types";
 
@@ -8,16 +8,17 @@ export function Sidebar({
 }: {
   accounts: Account[]; activeTab: string; setActiveTab: (tab: string) => void;
   activeRemindersCount: number; mobileMenuOpen: boolean; setMobileMenuOpen: (v: boolean) => void;
-  onOpenAddCompany: (type: "company" | "bank" | "overdraft") => void;
+  onOpenAddCompany: (type: "company" | "bank" | "cash" | "overdraft") => void;
   onOpenSettings: () => void; onLogout: () => void;
 }) {
   const companies = accounts.filter(a => a.type === "company");
   const banks = accounts.filter(a => a.type === "bank");
+  const cashes = accounts.filter(a => a.type === "cash");
   const overdrafts = accounts.filter(a => a.type === "overdraft");
 
   const navTo = (id: string) => { setActiveTab(id); setMobileMenuOpen(false); };
 
-  const renderGroup = (title: string, items: Account[], type: "company" | "bank" | "overdraft") => {
+  const renderGroup = (title: string, items: Account[], type: "company" | "bank" | "cash" | "overdraft") => {
     return (
       <div>
         <div className="bg-[#f1f5f9] px-4 py-2.5 flex items-center justify-between border-y border-slate-200/80">
@@ -122,11 +123,24 @@ export function Sidebar({
             <History size={18} className={`shrink-0 ${activeTab === "history" ? "text-blue-600" : "text-slate-500"}`} />
             <span className="truncate whitespace-nowrap">Transaction Summary</span>
           </button>
+
+          <button
+            onClick={() => navTo("ledgers")}
+            className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+              activeTab === "ledgers"
+                ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
+                : "text-slate-700 hover:bg-slate-50"
+            }`}
+          >
+            <BookOpen size={18} className={`shrink-0 ${activeTab === "ledgers" ? "text-blue-600" : "text-slate-500"}`} />
+            <span className="truncate whitespace-nowrap">Ledgers</span>
+          </button>
         </div>
 
         {/* Account Groups */}
         {renderGroup("COMPANIES", companies, "company")}
         {renderGroup("BANKS", banks, "bank")}
+        {renderGroup("CASH", cashes, "cash")}
         {renderGroup("OVERDRAFTS", overdrafts, "overdraft")}
       </div>
 

@@ -1,23 +1,30 @@
 import { useState } from "react";
-import { FileDown, X, Download } from "lucide-react";
-import type { Account } from "../../types";
+import { FileDown, X, Download, Filter } from "lucide-react";
+import type { Account, Program } from "../../types";
 import { generateMonthlyPDF } from "../../utils/generateMonthlyPDF";
 
 export function ReportModal({
   accounts,
+  programs = [],
   showReport,
   setShowReport,
 }: {
   accounts: Account[];
+  programs?: Program[];
   showReport: boolean;
   setShowReport: (v: boolean) => void;
 }) {
-  const [reportType, setReportType] = useState<"month" | "day">("month");
-  const [reportMonth, setReportMonth] = useState(new Date().getMonth() + 1);
-  const [reportYear, setReportYear] = useState(new Date().getFullYear());
-  const [reportDay, setReportDay] = useState(new Date().toISOString().split("T")[0]);
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const firstDayStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+
+  const [fromDate, setFromDate] = useState(firstDayStr);
+  const [toDate, setToDate] = useState(todayStr);
+  const [selectedProgramId, setSelectedProgramId] = useState<string>("");
 
   if (!showReport) return null;
+
+  const selectedProgram = selectedProgramId ? programs.find(p => String(p.id) === selectedProgramId) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: "rgba(0,0,0,0.55)" }}>
@@ -28,7 +35,7 @@ export function ReportModal({
               <FileDown size={18} className="text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">{reportType === "day" ? "Day Report" : "Monthly Report"}</h3>
+              <h3 className="font-bold text-base text-white">Download Report</h3>
               <p className="text-xs text-white/60">Download as PDF</p>
             </div>
           </div>
@@ -38,70 +45,58 @@ export function ReportModal({
         </div>
 
         <div className="p-6 space-y-5 flex-1 overflow-y-auto">
-          <div>
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Report Type</label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setReportType("month")}
-                className={`py-2 rounded-lg text-xs font-semibold transition-all border ${
-                  reportType === "month" ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setReportType("day")}
-                className={`py-2 rounded-lg text-xs font-semibold transition-all border ${
-                  reportType === "day" ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                }`}
-              >
-                Day-wise
-              </button>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">From Date</label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={e => setFromDate(e.target.value)}
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-input-background font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-1">To Date</label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={e => setToDate(e.target.value)}
+                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 bg-input-background font-mono"
+              />
             </div>
           </div>
 
-          {reportType === "month" ? (
-            <>
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Select Month</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                    <button
-                      key={m}
-                      onClick={() => setReportMonth(m)}
-                      className={`py-2 rounded-lg text-xs font-semibold transition-all border ${
-                        reportMonth === m ? "bg-primary text-white border-primary" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                      }`}
-                    >
-                      {new Date(2000, m - 1, 1).toLocaleString("en-IN", { month: "short" })}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Select Year</label>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setReportYear(y => y - 1)} className="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all text-lg font-bold">‹</button>
-                  <div className="flex-1 text-center font-mono font-bold text-xl text-foreground">{reportYear}</div>
-                  <button onClick={() => setReportYear(y => y + 1)} className="w-9 h-9 rounded-lg border border-border flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-foreground transition-all text-lg font-bold">›</button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide block mb-2">Select Date</label>
-              <input
-                type="date"
-                value={reportDay}
-                onChange={e => setReportDay(e.target.value)}
-                className="w-full border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 bg-input-background font-mono"
-              />
-            </div>
-          )}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5 mb-2">
+              <Filter size={12} className="text-indigo-600" /> Filter by Program
+            </label>
+            <select
+              value={selectedProgramId}
+              onChange={e => setSelectedProgramId(e.target.value)}
+              className="w-full border border-border rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 bg-input-background"
+            >
+              <option value="">-- All Programs (Full Report) --</option>
+              {programs.map(prog => (
+                <option key={prog.id} value={prog.id}>
+                  {prog.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="bg-secondary rounded-xl p-4 space-y-1.5">
             <div className="text-xs font-semibold text-muted-foreground mb-2">Report will include</div>
+            {selectedProgram ? (
+              <div className="flex items-center gap-2 text-xs font-bold text-indigo-700">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
+                Program filter: {selectedProgram.name}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-xs text-foreground">
+                <div className="w-1.5 h-1.5 rounded-full bg-accent" />
+                All programs included
+              </div>
+            )}
             <div className="flex items-center gap-2 text-xs text-foreground"><div className="w-1.5 h-1.5 rounded-full bg-accent" />Account summary table (all {accounts.length} accounts)</div>
             <div className="flex items-center gap-2 text-xs text-foreground"><div className="w-1.5 h-1.5 rounded-full bg-accent" />Transaction detail per account</div>
             <div className="flex items-center gap-2 text-xs text-foreground"><div className="w-1.5 h-1.5 rounded-full bg-accent" />Opening & closing balances</div>
@@ -114,14 +109,11 @@ export function ReportModal({
             Cancel
           </button>
           <button
-            disabled={reportType === "day" && !reportDay}
+            disabled={!fromDate || !toDate || fromDate > toDate}
             onClick={() => {
-              if (reportType === "day") {
-                const [y, m, d] = reportDay.split("-").map(Number);
-                generateMonthlyPDF(accounts, m, y, d);
-              } else {
-                generateMonthlyPDF(accounts, reportMonth, reportYear);
-              }
+              const progFilterObj = selectedProgram ? { id: selectedProgram.id, name: selectedProgram.name } : null;
+              const parts = fromDate.split("-").map(Number);
+              generateMonthlyPDF(accounts, parts[1] || now.getMonth() + 1, parts[0] || now.getFullYear(), undefined, progFilterObj, fromDate, toDate);
               setShowReport(false);
             }}
             className="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity"

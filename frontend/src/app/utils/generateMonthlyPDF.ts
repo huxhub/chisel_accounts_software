@@ -2,18 +2,55 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Account, Transaction } from "../types";
 
-export function generateMonthlyPDF(accounts: Account[], month: number, year: number, day?: number) {
+export function generateMonthlyPDF(
+  accounts: Account[],
+  month: number,
+  year: number,
+  day?: number,
+  programFilter?: { id: number; name: string } | null,
+  fromDate?: string,
+  toDate?: string
+) {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const monthName = new Date(year, month - 1, 1).toLocaleString("en-IN", { month: "long" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 14;
 
-  const periodLabel = day ? `${day} ${monthName} ${year}` : `${monthName} ${year}`;
-  const reportTitle = day ? "Day Report" : "Monthly Report";
-  const fileNamePeriod = day ? `${day}_${monthName}_${year}` : `${monthName}_${year}`;
+  let periodLabel = "";
+  let reportTitle = "Monthly Report";
+  let fileNamePeriod = "";
+
+  if (fromDate && toDate) {
+    if (fromDate === toDate) {
+      reportTitle = "Day Report";
+      const [y, m, d] = fromDate.split("-").map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      periodLabel = dateObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+      fileNamePeriod = `${d}_${m}_${y}`;
+    } else {
+      reportTitle = "Date Range Report";
+      const [fy, fm, fd] = fromDate.split("-").map(Number);
+      const [ty, tm, td] = toDate.split("-").map(Number);
+      const fromFormatted = new Date(fy, fm - 1, fd).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+      const toFormatted = new Date(ty, tm - 1, td).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+      periodLabel = `${fromFormatted} to ${toFormatted}`;
+      fileNamePeriod = `${fromDate}_to_${toDate}`;
+    }
+  } else {
+    const monthName = new Date(year, month - 1, 1).toLocaleString("en-IN", { month: "long" });
+    periodLabel = day ? `${day} ${monthName} ${year}` : `${monthName} ${year}`;
+    reportTitle = day ? "Day Report" : "Monthly Report";
+    fileNamePeriod = day ? `${day}_${monthName}_${year}` : `${monthName}_${year}`;
+  }
+
+  const programSuffix = programFilter ? ` [Program: ${programFilter.name}]` : "";
 
   const filterTx = (txs: Transaction[]) =>
     txs.filter(tx => {
+      if (programFilter && Number(tx.programId) !== Number(programFilter.id)) return false;
+      if (!tx.date) return false;
+      if (fromDate && toDate) {
+        return tx.date >= fromDate && tx.date <= toDate;
+      }
       const parts = tx.date.split("-");
       if (parts.length < 2) return false;
       const txYear = parseInt(parts[0], 10);
@@ -23,17 +60,32 @@ export function generateMonthlyPDF(accounts: Account[], month: number, year: num
       return day ? txDay === day : true;
     });
 
-  const isBeforePeriod = (d: Date) => {
-    if (d.getFullYear() !== year) return d.getFullYear() < year;
-    const dMonth = d.getMonth() + 1;
-    if (dMonth !== month) return dMonth < month;
-    return day ? d.getDate() < day : false;
+  const isBeforePeriod = (dateStr: string) => {
+    if (fromDate) {
+      return dateStr < fromDate;
+    }
+    const parts = dateStr.split("-");
+    if (parts.length < 2) return false;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const d = parts.length > 2 ? parseInt(parts[2], 10) : 1;
+    if (y !== year) return y < year;
+    if (m !== month) return m < month;
+    return day ? d < day : false;
   };
-  const isOnOrBeforePeriodEnd = (d: Date) => {
-    if (d.getFullYear() !== year) return d.getFullYear() < year;
-    const dMonth = d.getMonth() + 1;
-    if (dMonth !== month) return dMonth < month;
-    return day ? d.getDate() <= day : true;
+
+  const isOnOrBeforePeriodEnd = (dateStr: string) => {
+    if (toDate) {
+      return dateStr <= toDate;
+    }
+    const parts = dateStr.split("-");
+    if (parts.length < 2) return true;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const d = parts.length > 2 ? parseInt(parts[2], 10) : 1;
+    if (y !== year) return y < year;
+    if (m !== month) return m < month;
+    return day ? d <= day : true;
   };
 
   // ── Page 1: Overall Summary Cover Page ──
@@ -46,9 +98,9 @@ export function generateMonthlyPDF(accounts: Account[], month: number, year: num
   doc.setFontSize(9);
   doc.setFont("helvetica", "normal");
   doc.text("Multi-Company Accounting System", margin, 18);
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(`${reportTitle} — ${periodLabel}`, pageW - margin, 11, { align: "right" });
+  doc.text(`${reportTitle}${programSuffix} — ${periodLabel}`, pageW - margin, 11, { align: "right" });
   doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
   doc.text(`Generated: ${new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}`, pageW - margin, 18, { align: "right" });
@@ -56,23 +108,26 @@ export function generateMonthlyPDF(accounts: Account[], month: number, year: num
   doc.setTextColor(30, 58, 95);
   doc.setFontSize(11);
   doc.setFont("helvetica", "bold");
-  doc.text("Account Summary", margin, 35);
+  doc.text(programFilter ? `Account Summary (Program: ${programFilter.name})` : "Account Summary", margin, 35);
 
   const summaryRows: any[] = [];
   let totalOpen = 0, totalCredit = 0, totalDebit = 0, totalClose = 0;
 
   accounts.forEach(acc => {
-    const txsBeforeMonth = acc.transactions.filter(tx => isBeforePeriod(new Date(tx.date)));
+    const txsBeforeMonth = acc.transactions.filter(tx => {
+      if (programFilter && Number(tx.programId) !== Number(programFilter.id)) return false;
+      return isBeforePeriod(tx.date);
+    });
     const creditBefore = txsBeforeMonth.filter(t => t.type === "credit").reduce((s, t) => s + t.amount, 0);
     const debitBefore = txsBeforeMonth.filter(t => t.type === "debit").reduce((s, t) => s + t.amount, 0);
-    const monthlyOpeningBalance = acc.openingBalance + creditBefore - debitBefore;
+    const monthlyOpeningBalance = (programFilter ? 0 : acc.openingBalance) + creditBefore - debitBefore;
 
     const txs = filterTx(acc.transactions);
     const credit = txs.filter(t => t.type === "credit").reduce((s, t) => s + t.amount, 0);
     const debit = txs.filter(t => t.type === "debit").reduce((s, t) => s + t.amount, 0);
     const closing = monthlyOpeningBalance + credit - debit;
 
-    const accDate = acc.createdAt ? new Date(acc.createdAt) : new Date();
+    const accDate = acc.createdAt ? (typeof acc.createdAt === "string" ? acc.createdAt.split("T")[0] : new Date(acc.createdAt).toISOString().split("T")[0]) : new Date().toISOString().split("T")[0];
     const isExisted = isOnOrBeforePeriodEnd(accDate);
 
     if ((isExisted && (monthlyOpeningBalance !== 0 || credit > 0 || debit > 0)) || txs.length > 0) {
@@ -126,14 +181,17 @@ export function generateMonthlyPDF(accounts: Account[], month: number, year: num
   });
 
   // ── Inter-Company Transfers Table on Cover Page ──
-  buildTransfersSection(doc, accounts, month, year, day, margin);
+  buildTransfersSection(doc, accounts, month, year, day, margin, programFilter, fromDate, toDate);
 
-  // ── Pages 2+: Individual Account Pages (Matching Attached Screenshot) ──
+  // ── Pages 2+: Individual Account Pages ──
   accounts.forEach(acc => {
-    const txsBeforeMonth = acc.transactions.filter(tx => isBeforePeriod(new Date(tx.date)));
+    const txsBeforeMonth = acc.transactions.filter(tx => {
+      if (programFilter && Number(tx.programId) !== Number(programFilter.id)) return false;
+      return isBeforePeriod(tx.date);
+    });
     const creditBefore = txsBeforeMonth.filter(t => t.type === "credit").reduce((s, t) => s + t.amount, 0);
     const debitBefore = txsBeforeMonth.filter(t => t.type === "debit").reduce((s, t) => s + t.amount, 0);
-    const monthlyOpeningBalance = acc.openingBalance + creditBefore - debitBefore;
+    const monthlyOpeningBalance = (programFilter ? 0 : acc.openingBalance) + creditBefore - debitBefore;
 
     const txs = filterTx(acc.transactions).sort((a, b) => a.date.localeCompare(b.date));
     if (txs.length === 0 && monthlyOpeningBalance === 0) return;
@@ -150,8 +208,8 @@ export function generateMonthlyPDF(accounts: Account[], month: number, year: num
     doc.text(acc.name, margin, 11);
     doc.setFontSize(9.5);
     doc.setFont("helvetica", "normal");
-    const typeTitle = acc.type === "bank" ? "Bank Account" : acc.type === "overdraft" ? "Overdraft Account" : "Company Account";
-    doc.text(`${typeTitle} — ${periodLabel}`, margin, 18);
+    const typeTitle = acc.type === "bank" ? "Bank Account" : acc.type === "overdraft" ? "Overdraft Account" : acc.type === "cash" ? "Cash Account" : "Company Account";
+    doc.text(`${typeTitle}${programSuffix} — ${periodLabel}`, margin, 18);
     doc.text(`Page ${currentPageNum}`, pageW - margin, 15, { align: "right" });
 
     // Summary Cards Grid (4 boxes at top)
@@ -230,18 +288,35 @@ export function generateMonthlyPDF(accounts: Account[], month: number, year: num
   doc.save(`${reportTitle.replace(" ", "_")}_${fileNamePeriod}.pdf`);
 }
 
-function buildTransfersSection(doc: jsPDF, accounts: Account[], month: number, year: number, day: number | undefined, margin: number) {
+function buildTransfersSection(
+  doc: jsPDF,
+  accounts: Account[],
+  month: number,
+  year: number,
+  day: number | undefined,
+  margin: number,
+  programFilter?: { id: number; name: string } | null,
+  fromDate?: string,
+  toDate?: string
+) {
   const map = new Map<string, { date: string; amount: number; reference: string; dueDate?: string; exchangeType: string; fromCompany: string; toCompany: string }>();
 
   accounts.forEach(a => {
     a.transactions.forEach((tx: any) => {
-      const parts = tx.date.split("-");
-      if (parts.length < 2) return;
-      const txYear = parseInt(parts[0], 10);
-      const txMonth = parseInt(parts[1], 10);
-      const txDay = parts.length > 2 ? parseInt(parts[2], 10) : undefined;
-      const isThisMonth = txMonth === month && txYear === year && (day ? txDay === day : true);
-      if (!tx.reference || !isThisMonth || (!tx.exchangeType && !tx.reference.startsWith("EX-"))) return;
+      if (programFilter && Number(tx.programId) !== Number(programFilter.id)) return;
+      if (!tx.date) return;
+      let isThisPeriod = false;
+      if (fromDate && toDate) {
+        isThisPeriod = tx.date >= fromDate && tx.date <= toDate;
+      } else {
+        const parts = tx.date.split("-");
+        if (parts.length < 2) return;
+        const txYear = parseInt(parts[0], 10);
+        const txMonth = parseInt(parts[1], 10);
+        const txDay = parts.length > 2 ? parseInt(parts[2], 10) : undefined;
+        isThisPeriod = txMonth === month && txYear === year && (day ? txDay === day : true);
+      }
+      if (!tx.reference || !isThisPeriod || (!tx.exchangeType && !tx.reference.startsWith("EX-"))) return;
       let entry = map.get(tx.reference);
       if (!entry) {
         entry = { date: tx.date, amount: tx.amount, reference: tx.reference, dueDate: tx.dueDate, exchangeType: tx.exchangeType || "loan", fromCompany: "", toCompany: "" };
@@ -288,3 +363,4 @@ function buildTransfersSection(doc: jsPDF, accounts: Account[], month: number, y
     margin: { left: margin, right: margin }
   });
 }
+

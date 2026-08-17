@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { TrendingUp, TrendingDown, ChevronRight, ArrowUpRight, ArrowDownRight, Wallet, Activity, Tag, Bell, Check } from "lucide-react";
+import { useMemo, useState } from "react";
+import { TrendingUp, TrendingDown, ChevronRight, ArrowUpRight, ArrowDownRight, Wallet, Activity, Tag, Bell, Check, Search, Filter, X } from "lucide-react";
 import type { Account, Program } from "../types";
 import { calcBalance, calcTotalCredit, calcTotalDebit, fmtSign, accountTypeIcon, CHART_COLORS, fmt } from "../types";
 import { DashboardTransfersLog } from "./DashboardTransfersLog";
@@ -69,16 +69,21 @@ export function Dashboard({
     return list.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   }, [accounts]);
 
-  const recentTxs = accounts
-    .flatMap(a => {
-      const idx = accounts.findIndex(acc => acc.id === a.id);
-      const color = CHART_COLORS[idx % CHART_COLORS.length];
-      return a.transactions
-        .filter(tx => !tx.isReminder)
-        .map(tx => ({ ...tx, accountId: a.id, accountName: a.name, accountColor: color, accountBg: a.bgColor }));
-    })
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 8);
+  const allDashboardTxs = useMemo(() => {
+    return accounts
+      .flatMap(a => {
+        const idx = accounts.findIndex(acc => acc.id === a.id);
+        const color = CHART_COLORS[idx % CHART_COLORS.length];
+        return a.transactions
+          .filter(tx => !tx.isReminder)
+          .map(tx => ({ ...tx, accountId: a.id, accountName: a.name, accountColor: color, accountBg: a.bgColor }));
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [accounts]);
+
+  const filteredRecentTxs = useMemo(() => {
+    return allDashboardTxs.slice(0, 8);
+  }, [allDashboardTxs]);
 
   const programSummaries = useMemo(() => {
     if (!programs || programs.length === 0) return [];
@@ -283,6 +288,7 @@ export function Dashboard({
                       <div className="text-xs font-semibold text-foreground">{acc.name}</div>
                       {acc.type === "overdraft" && <span className="text-[10px] text-red-500 font-medium">Overdraft</span>}
                       {acc.type === "bank" && <span className="text-[10px] text-teal-600 font-medium">Bank</span>}
+                      {acc.type === "cash" && <span className="text-[10px] text-amber-700 font-medium">Cash</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -309,28 +315,39 @@ export function Dashboard({
 
         <div className="col-span-1 lg:col-span-3 bg-white rounded-2xl border border-border overflow-hidden">
           <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-            <h3 className="font-semibold text-sm text-foreground">Recent Transactions</h3>
-            <span className="text-xs text-muted-foreground">All accounts</span>
+            <h3 className="font-semibold text-sm text-foreground">
+              Recent Transactions
+            </h3>
+            <span className="text-xs text-muted-foreground font-mono">
+              {filteredRecentTxs.length} recent
+            </span>
           </div>
           <div className="divide-y divide-border/60">
-            {recentTxs.map((tx: any) => (
-              <div key={tx.id} className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${tx.type === "credit" ? "bg-emerald-50" : "bg-red-50"}`}>
-                  {tx.type === "credit" ? <ArrowUpRight size={14} className="text-emerald-600" /> : <ArrowDownRight size={14} className="text-red-500" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-medium text-foreground truncate">{tx.description}</div>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-white" style={{ backgroundColor: tx.accountColor }}>{tx.accountName}</span>
-                    <span className="text-[10px] text-muted-foreground font-mono">{tx.date.split("-").reverse().join("/")}</span>
-                    {tx.reference && <span className="text-[10px] text-muted-foreground font-mono">Ref: {tx.reference}</span>}
-                    {tx.exchangeType && <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold capitalize ${tx.exchangeType === "loan" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"}`}>{tx.exchangeType}</span>}
-                    {tx.dueDate && <span className="text-[9px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-mono">Due: {tx.dueDate.split("-").reverse().join("/")}</span>}
-                  </div>
-                </div>
-                <div className={`text-sm font-mono font-semibold flex-shrink-0 ${tx.type === "credit" ? "text-emerald-600" : "text-red-500"}`}>{tx.type === "credit" ? "+" : "-"}₹{tx.amount.toLocaleString("en-IN")}</div>
+            {filteredRecentTxs.length === 0 ? (
+              <div className="py-12 text-center text-xs text-muted-foreground">
+                No transactions found matching your filters.
               </div>
-            ))}
+            ) : (
+              filteredRecentTxs.map((tx: any) => (
+                <div key={tx.id} className="px-5 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${tx.type === "credit" ? "bg-emerald-50" : "bg-red-50"}`}>
+                    {tx.type === "credit" ? <ArrowUpRight size={14} className="text-emerald-600" /> : <ArrowDownRight size={14} className="text-red-500" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium text-foreground truncate">{tx.description}</div>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded font-semibold text-white" style={{ backgroundColor: tx.accountColor }}>{tx.accountName}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">{tx.date.split("-").reverse().join("/")}</span>
+                      {tx.reference && <span className="text-[10px] text-muted-foreground font-mono">Ref: {tx.reference}</span>}
+                      {tx.programName && <span className="text-[9px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-medium inline-flex items-center gap-0.5"><Tag size={9} /> {tx.programName}</span>}
+                      {tx.exchangeType && <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold capitalize ${tx.exchangeType === "loan" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"}`}>{tx.exchangeType}</span>}
+                      {tx.dueDate && <span className="text-[9px] bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-mono">Due: {tx.dueDate.split("-").reverse().join("/")}</span>}
+                    </div>
+                  </div>
+                  <div className={`text-sm font-mono font-semibold flex-shrink-0 ${tx.type === "credit" ? "text-emerald-600" : "text-red-500"}`}>{tx.type === "credit" ? "+" : "-"}₹{tx.amount.toLocaleString("en-IN")}</div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

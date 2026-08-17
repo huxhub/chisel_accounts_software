@@ -19,6 +19,8 @@ const formatTransaction = (tx) => ({
   isReminder: Boolean(tx.isReminder),
   programId: tx.programId || null,
   programName: tx.Program?.name || null,
+  vendorOrCustomerName: tx.vendorOrCustomerName || null,
+  relatedItemName: tx.relatedItemName || null,
   createdAt: tx.createdAt,
 });
 
@@ -28,6 +30,11 @@ export const getAccounts = async (req, res) => {
   try {
     const accounts = await Account.findAll({
       include: [{ model: Transaction, include: [{ model: Program, attributes: ['id', 'name'] }] }],
+      order: [
+        [Transaction, 'date', 'ASC'],
+        [Transaction, 'createdAt', 'ASC'],
+        [Transaction, 'id', 'ASC'],
+      ],
     });
 
     const formattedAccounts = accounts.map((acc) => ({

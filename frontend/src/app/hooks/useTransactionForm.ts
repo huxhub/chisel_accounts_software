@@ -87,13 +87,17 @@ export function useTransactionForm(
     }
     if (!activeAccount) return;
 
-    const isCompanyOrOD = activeAccount.type === "company" || activeAccount.type === "overdraft";
-    const selectedBank = isCompanyOrOD && form.paymentMode === "bank" && String(form.selectedBankId) !== String(activeAccount.id)
+    const isCompanyODOrCash = activeAccount.type === "company" || activeAccount.type === "overdraft" || activeAccount.type === "cash";
+    const selectedBank = isCompanyODOrCash && form.paymentMode === "bank" && String(form.selectedBankId) !== String(activeAccount.id)
       ? findAccountById(accounts, form.selectedBankId)
       : null;
 
-    const companyDescription = isCompanyOrOD && !editingTxId
-      ? `${form.description} (${form.paymentMode === "bank" && selectedBank ? selectedBank.name : "Cash"})`
+    const companyDescription = isCompanyODOrCash && !editingTxId
+      ? form.paymentMode === "bank" && selectedBank
+        ? activeAccount.type === "cash"
+          ? `${form.description} (${form.type === "credit" ? "From Bank" : "To Bank"}: ${selectedBank.name})`
+          : `${form.description} (${selectedBank.name})`
+        : form.description
       : form.description;
 
     const tx = {
@@ -112,11 +116,24 @@ export function useTransactionForm(
       result = await handleEditTx(activeTab, editingTxId, tx);
     } else {
       result = await handleAddTx(activeTab, tx);
-      if (result && isCompanyOrOD && form.paymentMode === "bank" && selectedBank && String(selectedBank.id) !== String(activeAccount.id)) {
+      if (result && isCompanyODOrCash && form.paymentMode === "bank" && selectedBank && String(selectedBank.id) !== String(activeAccount.id)) {
+        // Mirror transaction logic
+        let mirrorType: TransactionType = form.type;
+        let mirrorDesc = `${activeAccount.name}: ${form.description}`;
+
+        if (activeAccount.type === "cash") {
+          // If Cash is credited (cash received), Bank is debited (withdrawn)
+          // If Cash is debited (cash deposited), Bank is credited (deposited)
+          mirrorType = form.type === "credit" ? "debit" : "credit";
+          mirrorDesc = form.type === "credit"
+            ? `Cash Withdrawal to ${activeAccount.name}: ${form.description}`
+            : `Cash Deposit from ${activeAccount.name}: ${form.description}`;
+        }
+
         const bankTx = {
           date: form.date,
-          description: `${activeAccount.name}: ${form.description}`,
-          type: form.type,
+          description: mirrorDesc,
+          type: mirrorType,
           amount: parseFloat(form.amount),
           reference: form.reference || undefined,
           document: form.document || undefined,

@@ -1,4 +1,4 @@
-import { Building2, CreditCard, Landmark } from "lucide-react";
+import { Building2, CreditCard, Landmark, Wallet } from "lucide-react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -18,6 +18,91 @@ export interface Program {
   createdAt?: string;
 }
 
+export interface VendorEntry {
+  id: number;
+  vendorId: number;
+  type: "purchase" | "sale";
+  itemName: string;
+  amount: number;
+  party: string; // "from whom" for purchase, "to whom" for sale
+  date: string;
+  note?: string | null;
+  createdAt?: string;
+}
+
+export interface Vendor {
+  id: number;
+  name: string;
+  VendorEntries: VendorEntry[];
+  createdAt?: string;
+}
+
+export type VoucherType = "purchase" | "sale" | "payment" | "receipt";
+
+export interface Voucher {
+  id: number;
+  type: VoucherType;
+  date: string;
+  ledgerId: number;
+  accountId?: number | null;
+  itemName?: string | null;
+  amount: number;
+  reference?: string | null;
+  note?: string | null;
+  programId?: number | null;
+  document?: AttachedDoc | null;
+  Account?: { id: number; name: string };
+  Program?: { id: number; name: string };
+  Ledger?: { id: number; name: string; type: "vendor" | "customer" };
+}
+
+export interface Ledger {
+  id: number;
+  name: string;
+  type: "vendor" | "customer";
+  openingBalance: number;
+  openingType: "debit" | "credit";
+  totalPurchased?: number;
+  totalPaid?: number;
+  totalSold?: number;
+  totalReceived?: number;
+  balanceDue: number;
+  Vouchers?: Voucher[];
+  createdAt?: string;
+}
+
+export interface LedgerStatementRow {
+  id: number;
+  date: string;
+  type: VoucherType;
+  itemName?: string | null;
+  note?: string | null;
+  amount: number;
+  reference?: string | null;
+  accountName?: string | null;
+  programName?: string | null;
+  debit: number;
+  credit: number;
+  runningBalance: number;
+}
+
+export interface LedgerStatement {
+  ledger: {
+    id: number;
+    name: string;
+    type: "vendor" | "customer";
+    openingBalance: number;
+    openingType: "debit" | "credit";
+  };
+  summary: {
+    openingBalance: number;
+    totalDebit: number;
+    totalCredit: number;
+    closingBalance: number;
+  };
+  rows: LedgerStatementRow[];
+}
+
 export interface Transaction {
   id: string;
   date: string;
@@ -33,12 +118,14 @@ export interface Transaction {
   isReminder?: boolean;
   programId?: number | null;
   programName?: string | null;
+  vendorOrCustomerName?: string | null;
+  relatedItemName?: string | null;
 }
 
 export interface Account {
   id: string;
   name: string;
-  type: "company" | "overdraft" | "bank";
+  type: "company" | "overdraft" | "bank" | "cash";
   openingBalance: number;
   transactions: Transaction[];
   color: string;
@@ -103,12 +190,14 @@ export function findAccountById(list: Account[], id: string): Account | undefine
 export function accountTypeIcon(type: Account["type"]) {
   if (type === "overdraft") return CreditCard;
   if (type === "bank") return Landmark;
+  if (type === "cash") return Wallet;
   return Building2;
 }
 
 export function accountTypeLabel(type: Account["type"]): string {
   if (type === "overdraft") return "Overdraft Account";
   if (type === "bank") return "Bank Account";
+  if (type === "cash") return "Cash Account";
   return "Company Account";
 }
 

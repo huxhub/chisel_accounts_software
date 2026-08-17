@@ -15,7 +15,7 @@ export function AddAccountModal({
 }) {
   if (!showAddCompany) return null;
 
-  const label = companyForm.type === "overdraft" ? "Overdraft" : companyForm.type === "bank" ? "Bank" : "Company";
+  const label = companyForm.type === "overdraft" ? "Overdraft" : companyForm.type === "bank" ? "Bank" : companyForm.type === "cash" ? "Cash" : "Company";
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -47,6 +47,7 @@ export function AddAccountModal({
               >
                 <option value="company">Company</option>
                 <option value="bank">Bank</option>
+                <option value="cash">Cash</option>
                 <option value="overdraft">Overdraft</option>
               </select>
             </div>

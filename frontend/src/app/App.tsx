@@ -20,6 +20,8 @@ import { ExchangeModal } from "./components/modals/ExchangeModal";
 import { ProgramModal } from "./components/modals/ProgramModal";
 import { DeleteAccountModal, DeleteTxModal, CompleteReminderModal } from "./components/modals/DeleteConfirmModals";
 import { SettingsModal } from "./components/modals/SettingsModal";
+import { LedgersPage } from "./components/LedgersPage";
+import { VoucherModal } from "./components/modals/VoucherModal";
 
 import { useAuth } from "./hooks/useAuth";
 import { useSettings } from "./hooks/useSettings";
@@ -33,6 +35,7 @@ export default function App() {
   const {
     accounts,
     programs,
+    ledgers,
     loading,
     addTransaction: handleAddTx,
     deleteTransaction: handleDelTx,
@@ -43,6 +46,10 @@ export default function App() {
     deleteAccount: handleDeleteAccount,
     addProgram,
     deleteProgram,
+    addLedger,
+    deleteLedger,
+    addVoucher,
+    deleteVoucher,
   } = useAccountsController(isAuthenticated);
   const { settings, setSettings, tempSettings, setTempSettings, showSettings, setShowSettings } = useSettings();
 
@@ -50,6 +57,7 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [showReport, setShowReport] = useState<boolean>(false);
   const [showPrograms, setShowPrograms] = useState<boolean>(false);
+  const [showVoucherModal, setShowVoucherModal] = useState<boolean>(false);
   const [viewDoc, setViewDoc] = useState<AttachedDoc | null>(null);
   const [showCompleteModal, setShowCompleteModal] = useState<boolean>(false);
   const [reminderToComplete, setReminderToComplete] = useState<{ accountId: string; txId: string; description?: string } | null>(null);
@@ -114,6 +122,7 @@ export default function App() {
         onOpenExchange={exForm.openExchangeModal}
         onOpenReport={() => setShowReport(true)}
         onOpenPrograms={() => setShowPrograms(true)}
+        onOpenVendors={() => setActiveTab("ledgers")}
       />
 
       <div className="flex flex-1 overflow-hidden relative">
@@ -142,6 +151,16 @@ export default function App() {
             <HistoryPage accounts={accounts} programs={programs} onViewDoc={doc => setViewDoc(doc)} />
           ) : activeTab === "reminders" ? (
             <RemindersPage accounts={accounts} onNavigate={setActiveTab} onAddTransaction={handleAddTx} onDeleteTransaction={txForm.deleteTransaction} onCompleteReminder={promptCompleteReminder} />
+          ) : activeTab === "ledgers" || activeTab === "vendors" ? (
+            <LedgersPage
+              ledgers={ledgers}
+              accounts={accounts}
+              programs={programs}
+              onAddLedger={addLedger}
+              onDeleteLedger={deleteLedger}
+              onAddVoucher={addVoucher}
+              onOpenVoucherModal={() => setShowVoucherModal(true)}
+            />
           ) : accDetail.activeAccount ? (
             <AccountDetail
               activeAccount={accDetail.activeAccount}
@@ -173,17 +192,19 @@ export default function App() {
               onEditTransaction={txForm.openEditTransaction}
               onCompleteReminder={promptCompleteReminder}
               onNavigateToReminders={() => setActiveTab("reminders")}
+              programs={programs}
             />
           ) : null}
         </main>
       </div>
 
-      <ReportModal accounts={accounts} showReport={showReport} setShowReport={setShowReport} />
+      <ReportModal accounts={accounts} programs={programs} showReport={showReport} setShowReport={setShowReport} />
       <DocumentViewerModal viewDoc={viewDoc} setViewDoc={setViewDoc} />
       <AddAccountModal showAddCompany={accDetail.showAddCompany} setShowAddCompany={accDetail.setShowAddCompany} companyForm={accDetail.companyForm} setCompanyForm={accDetail.setCompanyForm} addCompany={accDetail.addCompany} />
       <AddTransactionModal showForm={txForm.showForm} setShowForm={txForm.setShowForm} activeAccount={accDetail.activeAccount} accounts={accounts} programs={programs} form={txForm.form} setForm={txForm.setForm} fileInputRef={txForm.fileInputRef} handleFileSelect={txForm.handleFileSelect} addTransaction={txForm.addTransaction} editingTxId={txForm.editingTxId} />
       <ExchangeModal showExchange={exForm.showExchange} setShowExchange={exForm.setShowExchange} exchangeForm={exForm.exchangeForm} setExchangeForm={exForm.setExchangeForm} accounts={accounts} handleExchangeSubmit={exForm.handleExchangeSubmit} />
       <ProgramModal showPrograms={showPrograms} setShowPrograms={setShowPrograms} programs={programs} onAddProgram={addProgram} onDeleteProgram={deleteProgram} />
+      <VoucherModal show={showVoucherModal} onClose={() => setShowVoucherModal(false)} accounts={accounts} programs={programs} ledgers={ledgers} onAddVoucher={addVoucher} onAddLedger={addLedger} />
       <DeleteAccountModal showDeleteDialog={accDetail.showDeleteDialog} setShowDeleteDialog={accDetail.setShowDeleteDialog} activeAccount={accDetail.activeAccount} deleteConfirmPassword={accDetail.deleteConfirmPassword} setDeleteConfirmPassword={accDetail.setDeleteConfirmPassword} deleteError={accDetail.deleteError} handleDeleteCompany={accDetail.handleDeleteCompany} />
       <DeleteTxModal showDeleteTxDialog={txForm.showDeleteTxDialog} setShowDeleteTxDialog={txForm.setShowDeleteTxDialog} txToDelete={txForm.txToDelete} setTxToDelete={txForm.setTxToDelete} handleDelTx={handleDelTx} />
       <CompleteReminderModal showCompleteModal={showCompleteModal} setShowCompleteModal={setShowCompleteModal} reminderToComplete={reminderToComplete} onConfirmComplete={handleCompleteReminder} />

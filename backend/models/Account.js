@@ -10,7 +10,7 @@ Account.init(
       allowNull: false,
     },
     type: {
-      type: DataTypes.ENUM('company', 'overdraft', 'bank'),
+      type: DataTypes.ENUM('company', 'overdraft', 'bank', 'cash'),
       allowNull: false,
     },
     openingBalance: {

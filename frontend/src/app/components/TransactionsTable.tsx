@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Image, FileText, Trash2, Edit3, BarChart3, Tag } from "lucide-react";
-import type { Account, AttachedDoc } from "../types";
+import { useState, useEffect, useMemo } from "react";
+import { Image, FileText, Trash2, Edit3, BarChart3, Tag, Search, Filter, X } from "lucide-react";
+import type { Account, AttachedDoc, Program } from "../types";
 import { fmt, calcBalance, calcTotalCredit } from "../types";
 import { Pagination } from "./ui/pagination";
 
@@ -11,6 +11,7 @@ export function TransactionsTable({
   onViewDoc,
   onDeleteTransaction,
   onEditTransaction,
+  programs = [],
 }: {
   activeAccount: Account;
   normalTransactions: any[];
@@ -18,23 +19,101 @@ export function TransactionsTable({
   onViewDoc: (doc: AttachedDoc) => void;
   onDeleteTransaction: (txId: string) => void;
   onEditTransaction?: (tx: any) => void;
+  programs?: Program[];
 }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "debit">("all");
+  const [programFilter, setProgramFilter] = useState("");
+
   const pageSize = 10;
+
+  const hasFilters = Boolean(searchQuery || typeFilter !== "all" || programFilter);
+
+  const filteredTransactions = useMemo(() => {
+    return normalTransactions.filter((tx: any) => {
+      if (typeFilter !== "all" && tx.type !== typeFilter) return false;
+      if (programFilter && String(tx.programId) !== String(programFilter)) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const matchDesc = tx.description?.toLowerCase().includes(q);
+        const matchRef = tx.reference?.toLowerCase().includes(q);
+        const matchProg = tx.programName?.toLowerCase().includes(q);
+        const matchAmt = String(tx.amount).includes(q);
+        const matchDate = tx.date?.includes(q);
+        if (!matchDesc && !matchRef && !matchProg && !matchAmt && !matchDate) return false;
+      }
+      return true;
+    });
+  }, [normalTransactions, searchQuery, typeFilter, programFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeAccount.id, normalTransactions.length]);
+  }, [activeAccount.id, filteredTransactions.length, searchQuery, typeFilter, programFilter]);
 
-  const totalPages = Math.ceil(normalTransactions.length / pageSize);
-  const reversedTxs = [...normalTransactions].reverse();
+  const totalPages = Math.ceil(filteredTransactions.length / pageSize);
+  const reversedTxs = [...filteredTransactions].reverse();
   const paginatedTxs = reversedTxs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="bg-white rounded-xl border border-border overflow-hidden">
-      <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-        <h3 className="font-semibold text-sm text-foreground">Transactions — {activeAccount.name}</h3>
-        <span className="text-xs text-muted-foreground">{normalTransactions.length} entries</span>
+    <div className="bg-white rounded-xl border border-border overflow-hidden space-y-0">
+      {/* Header & Filter Bar */}
+      <div className="px-5 py-3 border-b border-border space-y-3 bg-slate-50/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Filter size={15} className="text-slate-500" />
+            <h3 className="font-semibold text-sm text-foreground">Transactions — {activeAccount.name}</h3>
+          </div>
+          <div className="flex items-center gap-3">
+            {hasFilters && (
+              <button
+                onClick={() => { setSearchQuery(""); setTypeFilter("all"); setProgramFilter(""); }}
+                className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
+              >
+                <X size={13} /> Clear Filters
+              </button>
+            )}
+            <span className="text-xs text-muted-foreground font-mono font-medium">
+              {filteredTransactions.length} {hasFilters ? "matching" : "entries"}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search description, ref, date, amount..."
+              className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all"
+            />
+          </div>
+          <select
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value as any)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all"
+          >
+            <option value="all">All Transaction Types</option>
+            <option value="credit">Credit Only (+)</option>
+            <option value="debit">Debit Only (-)</option>
+          </select>
+          {programs.length > 0 ? (
+            <select
+              value={programFilter}
+              onChange={e => setProgramFilter(e.target.value)}
+              className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all"
+            >
+              <option value="">All Programs</option>
+              {programs.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          ) : (
+            <div />
+          )}
+        </div>
       </div>
 
       {normalTransactions.length === 0 ? (
@@ -42,6 +121,11 @@ export function TransactionsTable({
           <BarChart3 size={32} className="mx-auto mb-3 opacity-30" />
           <p>No entries yet</p>
           <p className="text-xs mt-1">Click "Add Entry" above to get started</p>
+        </div>
+      ) : filteredTransactions.length === 0 ? (
+        <div className="py-12 text-center text-muted-foreground text-sm">
+          <Search size={28} className="mx-auto mb-2 opacity-30" />
+          <p>No transactions match your search/filter criteria.</p>
         </div>
       ) : (
         <>
@@ -146,8 +230,13 @@ export function TransactionsTable({
                       <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{tx.date.split("-").reverse().join("/")}</td>
                       <td className="px-4 py-3 text-foreground">
                         <div className="font-medium">{tx.description}</div>
-                        {(tx.exchangeType || tx.dueDate) && (
+                        {(tx.relatedItemName || tx.exchangeType || tx.dueDate) && (
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            {tx.relatedItemName && (
+                              <span className="text-[10px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-medium">
+                                {tx.relatedItemName}
+                              </span>
+                            )}
                             {tx.exchangeType && (
                               <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold capitalize ${tx.exchangeType === "loan" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"}`}>{tx.exchangeType}</span>
                             )}

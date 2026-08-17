@@ -1,4 +1,4 @@
-import { Menu, ArrowLeftRight, FileDown, Tag } from "lucide-react";
+import { Menu, ArrowLeftRight, FileDown, Tag, BookOpen } from "lucide-react";
 import chiselLogo from "../../assets/logo.png";
 import type { AppSettings } from "../hooks/useSettings";
 
@@ -9,6 +9,7 @@ export function Header({
   onOpenExchange,
   onOpenReport,
   onOpenPrograms,
+  onOpenVendors,
 }: {
   settings: AppSettings;
   mobileMenuOpen: boolean;
@@ -16,6 +17,7 @@ export function Header({
   onOpenExchange: () => void;
   onOpenReport: () => void;
   onOpenPrograms?: () => void;
+  onOpenVendors?: () => void;
 }) {
   return (
     <header className="bg-primary text-primary-foreground px-4 sm:px-6 py-4 flex flex-wrap sm:flex-nowrap items-center justify-between shadow-lg flex-shrink-0 gap-3">
@@ -50,7 +52,16 @@ export function Header({
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
           >
             <Tag size={16} />
-            <span>Programs</span>
+            <span>Project</span>
+          </button>
+        )}
+        {onOpenVendors && (
+          <button
+            onClick={onOpenVendors}
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
+          >
+            <BookOpen size={16} />
+            <span>Ledgers</span>
           </button>
         )}
         <button

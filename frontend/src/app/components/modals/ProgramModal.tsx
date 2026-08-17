@@ -40,7 +40,7 @@ export function ProgramModal({
               <Tag size={18} className="text-white" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">Manage Programs</h3>
+              <h3 className="font-bold text-base text-white">Manage Project</h3>
               <p className="text-xs text-white/70">Create and organize project categories</p>
             </div>
           </div>
@@ -55,7 +55,7 @@ export function ProgramModal({
         <div className="p-6 space-y-6 flex-1 overflow-y-auto">
           <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3.5">
             <div className="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
-              <FolderPlus size={14} /> Add New Program
+              <FolderPlus size={14} /> Add New Project
             </div>
 
             <div className="flex items-center gap-2">
@@ -95,7 +95,6 @@ export function ProgramModal({
                       <Tag size={14} className="text-primary/70" />
                       <span className="text-sm font-semibold text-slate-800">{prog.name}</span>
                     </div>
-
                     <button
                       type="button"
                       onClick={() => onDeleteProgram(prog.id)}

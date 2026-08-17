@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import {
   TrendingUp, TrendingDown, Scale, Activity, Filter, X, Calendar,
-  ChevronDown, ChevronUp, Building2, Landmark, CreditCard, FileText, Image, Tag,
+  ChevronDown, ChevronUp, Building2, Landmark, CreditCard, Wallet, FileText, Image, Tag,
 } from "lucide-react";
 import { useHistory } from "../hooks/useHistory";
 import type { AccountSummary } from "../hooks/useHistory";
@@ -22,6 +22,7 @@ const PRESETS = [
 function AccountIcon({ type }: { type: string }) {
   if (type === "overdraft") return <CreditCard size={14} />;
   if (type === "bank") return <Landmark size={14} />;
+  if (type === "cash") return <Wallet size={14} />;
   return <Building2 size={14} />;
 }
 

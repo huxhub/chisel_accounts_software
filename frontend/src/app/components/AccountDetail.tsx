@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Trash2, Edit3, Check, X, Bell } from "lucide-react";
-import type { Account, AttachedDoc } from "../types";
+import type { Account, AttachedDoc, Program } from "../types";
 import { accountTypeIcon, accountTypeLabel, fmt, fmtSign, calcBalance, calcTotalCredit, calcTotalDebit } from "../types";
 import { TransactionsTable } from "./TransactionsTable";
 import { ExchangeTransactionsTable } from "./ExchangeTransactionsTable";
@@ -31,6 +31,7 @@ export function AccountDetail({
   onEditTransaction,
   onCompleteReminder,
   onNavigateToReminders,
+  programs = [],
 }: {
   activeAccount: Account;
   activeAccountReminders: any[];
@@ -57,6 +58,7 @@ export function AccountDetail({
   onEditTransaction?: (tx: any) => void;
   onCompleteReminder?: (accountId: string, txId: string) => void;
   onNavigateToReminders: () => void;
+  programs?: Program[];
 }) {
   const Icon = accountTypeIcon(activeAccount.type);
   const [dismissedReminderIds, setDismissedReminderIds] = useState<Set<string>>(() => {
@@ -124,6 +126,7 @@ export function AccountDetail({
                 </button>
                 {activeAccount.type === "overdraft" && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700 leading-none">Overdraft</span>}
                 {activeAccount.type === "bank" && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-700 leading-none">Bank</span>}
+                {activeAccount.type === "cash" && <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 leading-none">Cash</span>}
               </div>
             )}
             <p className="text-sm text-muted-foreground">{accountTypeLabel(activeAccount.type)}</p>
@@ -215,10 +218,7 @@ export function AccountDetail({
       </div>
 
       {/* Transactions Table */}
-      <TransactionsTable activeAccount={activeAccount} normalTransactions={normalTransactions} txRunningBalances={txRunningBalances} onViewDoc={onViewDoc} onDeleteTransaction={onDeleteTransaction} onEditTransaction={onEditTransaction} />
-
-      {/* Exchange Transactions Table */}
-      <ExchangeTransactionsTable exchangeTransactions={exchangeTransactions} onDeleteTransaction={onDeleteTransaction} />
+      <TransactionsTable activeAccount={activeAccount} normalTransactions={normalTransactions} txRunningBalances={txRunningBalances} onViewDoc={onViewDoc} onDeleteTransaction={onDeleteTransaction} onEditTransaction={onEditTransaction} programs={programs} />
     </div>
   );
 }

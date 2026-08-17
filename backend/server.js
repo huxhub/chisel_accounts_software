@@ -67,12 +67,18 @@ app.use('/api', rateLimit({
 
 import authRoutes from './routes/authRoutes.js';
 import programRoutes from './routes/programRoutes.js';
+import vendorRoutes from './routes/vendorRoutes.js';
+import ledgerRoutes from './routes/ledgerRoutes.js';
+import voucherRoutes from './routes/voucherRoutes.js';
 import { protect } from './middleware/authMiddleware.js';
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', protect, accountRoutes);
 app.use('/api/programs', protect, programRoutes);
+app.use('/api/vendors', protect, vendorRoutes);
+app.use('/api/ledgers', protect, ledgerRoutes);
+app.use('/api/vouchers', protect, voucherRoutes);
 
 
 // Basic Route

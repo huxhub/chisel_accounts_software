@@ -97,11 +97,43 @@ const connectDB = async () => {
           'ALTER TABLE `Transactions` ADD COLUMN `programId` INT NULL'
         );
       }
+
+      const [vcColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('Transactions') AND LOWER(COLUMN_NAME) = LOWER('vendorOrCustomerName')`,
+        { replacements: [dbName] }
+      );
+      if (vcColumns.length === 0) {
+        await sequelize.query(
+          'ALTER TABLE `Transactions` ADD COLUMN `vendorOrCustomerName` VARCHAR(255) NULL'
+        );
+      }
+
+      const [riColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('Transactions') AND LOWER(COLUMN_NAME) = LOWER('relatedItemName')`,
+        { replacements: [dbName] }
+      );
+      if (riColumns.length === 0) {
+        await sequelize.query(
+          'ALTER TABLE `Transactions` ADD COLUMN `relatedItemName` VARCHAR(255) NULL'
+        );
+      }
     } catch {
       // Transactions table doesn't exist yet on first boot
     }
 
+    try {
+      await sequelize.query(
+        "ALTER TABLE `Accounts` MODIFY COLUMN `type` ENUM('company', 'overdraft', 'bank', 'cash') NOT NULL"
+      );
+    } catch {
+      // Accounts table doesn't exist yet on first boot
+    }
+
     await sequelize.sync();
+    const { migrateOldVendorsToLedgers } = await import('./migrateLedgers.js');
+    await migrateOldVendorsToLedgers();
     console.log(`MySQL Connected: ${sequelize.config.host}/${sequelize.config.database}`);
   } catch (error) {
     console.error(`[DB Error]: ${error.message}`);
