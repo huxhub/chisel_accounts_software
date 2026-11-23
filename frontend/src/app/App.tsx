@@ -58,9 +58,15 @@ export default function App() {
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const refreshInventory = () => inventoryRequest().then(setInventoryItems).catch(() => {});
   const deleteInventoryCompany = async (id: number) => {
-    await inventoryRequest(`/${id}`, { method: "DELETE" });
-    await refreshInventory();
-    setActiveTab("dashboard");
+    try {
+      await inventoryRequest(`/${id}`, { method: "DELETE" });
+      setInventoryItems(items => items.filter(item => item.id !== id));
+      setActiveTab("dashboard");
+      toast.success("Inventory company deleted");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to delete inventory company.");
+      throw error;
+    }
   };
   useEffect(() => { if (isAuthenticated) refreshInventory(); else setInventoryItems([]); }, [isAuthenticated]);
   const accountsWithInventory = useMemo(() => [
