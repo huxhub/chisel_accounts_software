@@ -28,10 +28,6 @@ export function Header({
           <Menu size={20} />
         </button>
 
-        {settings.logoUrl ? (
-          <img src={settings.logoUrl} className="w-8 h-8 sm:w-9 sm:h-9 object-contain bg-white/10 p-1 rounded-lg" alt="Logo" />
-        ) : null}
-
         <div className="flex flex-col">
           <span className="text-base sm:text-lg font-bold tracking-wider text-white leading-none font-sans">
             {settings.companyName}
