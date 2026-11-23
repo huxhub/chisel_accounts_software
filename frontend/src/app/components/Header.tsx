@@ -40,7 +40,7 @@ export function Header({
   };
 
   return (
-    <header className="bg-primary text-primary-foreground px-4 sm:px-6 py-4 flex flex-wrap sm:flex-nowrap items-center justify-between shadow-lg flex-shrink-0 gap-3">
+    <header className="bg-primary text-primary-foreground px-3 sm:px-6 py-2.5 sm:py-4 flex flex-wrap sm:flex-nowrap items-center justify-between shadow-lg flex-shrink-0 gap-2 sm:gap-3">
       <div className="flex items-center gap-2 sm:gap-3">
         <button
           className="md:hidden p-1.5 -ml-1.5 rounded-md hover:bg-white/15 transition-colors"
@@ -59,11 +59,11 @@ export function Header({
         </div>
       </div>
 
-      <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+      <div className="grid w-full grid-cols-4 gap-2 sm:flex sm:w-auto sm:items-center sm:gap-3">
         {/* {onOpenPrograms && (
           <button
             onClick={onOpenPrograms}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
+            className="flex min-h-10 items-center justify-center gap-1.5 sm:gap-2 px-0 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
           >
             <Tag size={16} />
             <span>Project</span>
@@ -72,36 +72,33 @@ export function Header({
         {onOpenVendors && (
           <button
             onClick={onOpenVendors}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
+            className="flex min-h-10 items-center justify-center gap-1.5 sm:gap-2 px-0 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
           >
             <BookOpen size={16} />
-            <span>Ledgers</span>
+            <span className="hidden sm:inline">Ledgers</span>
           </button>
         )}
         <button
           onClick={installApp}
-          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
+          className="flex min-h-10 items-center justify-center gap-1.5 sm:gap-2 px-0 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
           title="Add this app to your home screen"
         >
           <Download size={16} />
           <span className="hidden sm:inline">Install App</span>
-          <span className="sm:hidden">Install</span>
         </button>
         <button
           onClick={onOpenExchange}
-          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
+          className="flex min-h-10 items-center justify-center gap-1.5 sm:gap-2 px-0 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
         >
           <ArrowLeftRight size={16} />
           <span className="hidden sm:inline">Inter-Company Transfer</span>
-          <span className="sm:hidden">Transfer</span>
         </button>
         <button
           onClick={onOpenReport}
-          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
+          className="flex min-h-10 items-center justify-center gap-1.5 sm:gap-2 px-0 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
         >
           <FileDown size={16} />
           <span className="hidden sm:inline">Monthly Report</span>
-          <span className="sm:hidden">Report</span>
         </button>
 
         <div className="hidden text-right text-sm lg:block">

@@ -85,7 +85,7 @@ export function Sidebar({
 
   return (
     <aside
-      className={`fixed md:relative z-30 inset-y-0 left-0 w-80 md:w-64 bg-white border-r border-slate-200 flex flex-col h-full overflow-hidden transition-transform duration-300 ease-in-out md:translate-x-0 ${
+      className={`fixed md:relative z-30 inset-y-0 left-0 h-[100dvh] md:h-full w-80 md:w-64 bg-white border-r border-slate-200 flex flex-col overflow-hidden transition-transform duration-300 ease-in-out md:translate-x-0 ${
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >
@@ -94,7 +94,7 @@ export function Sidebar({
         <div className="min-w-0"><p className="text-sm font-bold text-slate-900 truncate">{settings.companyName}</p><p className="text-xs text-slate-500 truncate">{settings.companySubtitle}</p></div>
       </div>
       {/* Scrollable Navigation Items */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain py-4 space-y-4">
         {/* Top Links */}
         <div className="px-4 space-y-1.5">
           <button

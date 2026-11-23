@@ -92,6 +92,9 @@ export default function App() {
   ], [accounts, inventoryItems]);
 
   const [activeTab, setActiveTab] = useState<string>("dashboard");
+  useEffect(() => {
+    document.querySelector("main")?.scrollTo({ top: 0, behavior: "auto" });
+  }, [activeTab]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [showReport, setShowReport] = useState<boolean>(false);
   const [showPrograms, setShowPrograms] = useState<boolean>(false);

@@ -66,7 +66,7 @@ export function LedgersPage({
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-5 sm:space-y-6">
       {/* Top Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white rounded-2xl p-6 shadow-sm border border-border">
         <div>
@@ -137,7 +137,7 @@ export function LedgersPage({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 [&>div]:min-w-0 [&>div]:rounded-xl [&>div]:p-3.5 sm:[&>div]:rounded-2xl sm:[&>div]:p-5 [&>div_.font-mono]:whitespace-nowrap [&>div_.font-mono]:text-base sm:[&>div_.font-mono]:text-2xl">
         <div className="bg-white rounded-2xl p-5 border border-border shadow-sm">
           <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
             Total {activeTab === "vendor" ? "Vendors" : "Customers"}
