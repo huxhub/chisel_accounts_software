@@ -39,7 +39,7 @@ export function Header({
       </div>
 
       <div className="flex items-center justify-between w-full sm:w-auto gap-3">
-        {onOpenPrograms && (
+        {/* {onOpenPrograms && (
           <button
             onClick={onOpenPrograms}
             className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
@@ -47,7 +47,7 @@ export function Header({
             <Tag size={16} />
             <span>Project</span>
           </button>
-        )}
+        )} */}
         {onOpenVendors && (
           <button
             onClick={onOpenVendors}
