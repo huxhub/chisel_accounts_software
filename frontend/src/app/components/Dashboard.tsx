@@ -18,10 +18,10 @@ export function Dashboard({
   onCompleteReminder?: (accountId: string, txId: string) => void;
 }) {
   const businessAccounts = accounts.filter(account => !String(account.id).startsWith("inventory-"));
-  const totalOpening = accounts.reduce((s, a) => s + a.openingBalance, 0);
-  const totalCredit = accounts.reduce((s, a) => s + calcTotalCredit(a), 0);
-  const totalDebit = accounts.reduce((s, a) => s + calcTotalDebit(a), 0);
-  const totalClosing = accounts.reduce((s, a) => s + calcBalance(a), 0);
+  const totalOpening = businessAccounts.reduce((s, a) => s + a.openingBalance, 0);
+  const totalCredit = businessAccounts.reduce((s, a) => s + calcTotalCredit(a), 0);
+  const totalDebit = businessAccounts.reduce((s, a) => s + calcTotalDebit(a), 0);
+  const totalClosing = businessAccounts.reduce((s, a) => s + calcBalance(a), 0);
 
   const interCompanyTransfers = useMemo(() => {
     const map = new Map<string, { id: string; date: string; amount: number; reference: string; dueDate?: string; exchangeType: string; description: string; fromCompany: string; fromColor: string; toCompany: string; toColor: string; createdAt?: string }>();
@@ -249,13 +249,37 @@ export function Dashboard({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {inventoryItems.map(item => {
             const transactions = item.transactions || [];
+            const totalAmount = transactions.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+            const paidAmount = transactions.filter(tx => tx.paymentStatus === "paid").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+            const pendingBalance = transactions.filter(tx => tx.paymentStatus === "not_paid").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
             const paidCount = transactions.filter(tx => tx.paymentStatus === "paid").length;
             const unpaidCount = transactions.length - paidCount;
-            const pendingBalance = transactions.filter(tx => tx.paymentStatus === "not_paid").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
             return <button key={item.id} onClick={() => onNavigate(`inventory-${item.id}`)} className="group rounded-xl border border-blue-100 bg-white p-4 text-left transition-colors hover:border-blue-200">
               <div className="mb-4 flex items-center justify-between"><div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Package size={16} /></span><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900">{item.name}</p><p className="text-[11px] text-slate-500">Inventory Account</p></div></div><ChevronRight size={15} className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-600" /></div>
-              <div className="mb-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Balance amount</p><p className="mt-1 font-mono text-base font-bold text-amber-700">₹{pendingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div>
-              <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100 pt-3"><div><p className="text-[10px] text-slate-500">Paid transactions</p><p className="mt-0.5 font-mono text-sm font-bold text-emerald-600">{paidCount}</p></div><div className="pl-4"><p className="text-[10px] text-slate-500">Unpaid transactions</p><p className="mt-0.5 font-mono text-sm font-bold text-red-600">{unpaidCount}</p></div></div>
+              <div className="mb-3 flex items-baseline justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Balance due</p>
+                  <p className={`mt-1 font-mono text-base font-bold ${pendingBalance > 0 ? "text-amber-700" : "text-emerald-600"}`}>
+                    ₹{pendingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Total amount</p>
+                  <p className="mt-1 font-mono text-xs font-semibold text-slate-600">
+                    ₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100 pt-3">
+                <div>
+                  <p className="text-[10px] text-slate-500">Paid ({paidCount})</p>
+                  <p className="mt-0.5 font-mono text-xs font-bold text-emerald-600">₹{paidAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+                <div className="pl-4">
+                  <p className="text-[10px] text-slate-500">Pending ({unpaidCount})</p>
+                  <p className="mt-0.5 font-mono text-xs font-bold text-red-600">₹{pendingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                </div>
+              </div>
             </button>;
           })}
         </div>

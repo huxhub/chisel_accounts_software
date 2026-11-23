@@ -32,6 +32,16 @@ router.post('/', async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 });
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const item = await InventoryItem.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ message: 'Inventory company not found' });
+    await InventoryTransaction.destroy({ where: { inventoryItemId: item.id } });
+    await item.destroy();
+    res.json({ message: 'Inventory company deleted' });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+});
+
 router.get('/:id/transactions', async (req, res) => {
   try {
     const item = await InventoryItem.findByPk(req.params.id);

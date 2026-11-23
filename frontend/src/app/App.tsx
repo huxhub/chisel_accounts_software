@@ -57,6 +57,11 @@ export default function App() {
   const [inventoryItems, setInventoryItems] = useState<Item[]>([]);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const refreshInventory = () => inventoryRequest().then(setInventoryItems).catch(() => {});
+  const deleteInventoryCompany = async (id: number) => {
+    await inventoryRequest(`/${id}`, { method: "DELETE" });
+    await refreshInventory();
+    setActiveTab("dashboard");
+  };
   useEffect(() => { if (isAuthenticated) refreshInventory(); else setInventoryItems([]); }, [isAuthenticated]);
   const accountsWithInventory = useMemo(() => [
     ...accounts,
@@ -70,7 +75,7 @@ export default function App() {
       createdAt: undefined,
       transactions: (item.transactions || []).map(tx => ({
         id: `inventory-${item.id}-${tx.id}`,
-        date: tx.createdAt.slice(0, 10),
+        date: tx.createdAt ? String(tx.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
         description: `${tx.name} · ${tx.quantity} · ${tx.paymentStatus === "paid" ? "Paid" : "Not paid"}`,
         type: "debit" as const,
         amount: Number(tx.amount || 0),
@@ -183,7 +188,7 @@ export default function App() {
           ) : activeTab === "reminders" ? (
             <RemindersPage accounts={accounts} onNavigate={setActiveTab} onAddTransaction={handleAddTx} onDeleteTransaction={txForm.deleteTransaction} onCompleteReminder={promptCompleteReminder} />
           ) : typeof activeTab === "string" && activeTab.startsWith("inventory-") ? (
-            inventoryItems.find(item => `inventory-${item.id}` === activeTab) ? <InventoryDetail item={inventoryItems.find(item => `inventory-${item.id}` === activeTab)!} onTransactionsChanged={refreshInventory} /> : null
+            inventoryItems.find(item => `inventory-${item.id}` === activeTab) ? <InventoryDetail item={inventoryItems.find(item => `inventory-${item.id}` === activeTab)!} onTransactionsChanged={refreshInventory} onDeleteCompany={() => deleteInventoryCompany(inventoryItems.find(item => `inventory-${item.id}` === activeTab)!.id)} /> : null
           ) : activeTab === "ledgers" || activeTab === "vendors" ? (
             <LedgersPage
               ledgers={ledgers}

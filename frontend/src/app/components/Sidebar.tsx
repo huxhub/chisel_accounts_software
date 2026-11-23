@@ -1,4 +1,5 @@
-import { LayoutDashboard, Bell, ChevronRight, Settings, LogOut, History, Plus, BookOpen, Package } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LayoutDashboard, Bell, ChevronDown, ChevronRight, Settings, LogOut, History, Plus, BookOpen, Package } from "lucide-react";
 import type { Item } from "./InventoryPage";
 import type { Account } from "../types";
 import type { AppSettings } from "../hooks/useSettings";
@@ -14,6 +15,14 @@ export function Sidebar({
   onOpenAddCompany: (type: "company" | "bank" | "cash" | "overdraft") => void;
   onOpenSettings: () => void; onLogout: () => void;
 }) {
+  const [inventoryExpanded, setInventoryExpanded] = useState(() => localStorage.getItem("sidebar-inventory-expanded") !== "false");
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      return { company: true, bank: true, cash: true, overdraft: true, ...JSON.parse(localStorage.getItem("sidebar-account-groups") || "{}") };
+    } catch { return { company: true, bank: true, cash: true, overdraft: true }; }
+  });
+  useEffect(() => { localStorage.setItem("sidebar-inventory-expanded", String(inventoryExpanded)); }, [inventoryExpanded]);
+  useEffect(() => { localStorage.setItem("sidebar-account-groups", JSON.stringify(expandedGroups)); }, [expandedGroups]);
   const companies = accounts.filter(a => a.type === "company");
   const banks = accounts.filter(a => a.type === "bank");
   const cashes = accounts.filter(a => a.type === "cash");
@@ -25,9 +34,9 @@ export function Sidebar({
     return (
       <div>
         <div className="bg-[#f1f5f9] px-4 py-2.5 flex items-center justify-between border-y border-slate-200/80">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-600">
-            {title}
-          </span>
+          <button onClick={() => setExpandedGroups(groups => ({ ...groups, [type]: !groups[type] }))} aria-expanded={expandedGroups[type]} className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-slate-900">
+            {title} <ChevronDown size={14} className={`transition-transform ${expandedGroups[type] ? "rotate-0" : "-rotate-90"}`} />
+          </button>
           <button
             onClick={() => onOpenAddCompany(type)}
             className="text-slate-500 hover:text-slate-800 transition-colors p-0.5"
@@ -36,7 +45,7 @@ export function Sidebar({
             <Plus size={16} />
           </button>
         </div>
-        <div className="divide-y divide-slate-100">
+        {expandedGroups[type] && <div className="divide-y divide-slate-100">
           {items.map(acc => {
             const closing = calcBalance(acc);
             const isActive = activeTab === acc.id;
@@ -69,7 +78,7 @@ export function Sidebar({
               </button>
             );
           })}
-        </div>
+        </div>}
       </div>
     );
   };
@@ -147,15 +156,34 @@ export function Sidebar({
         {/* Account Groups */}
         <div>
           <div className="bg-[#f1f5f9] px-4 py-2.5 flex items-center justify-between border-y border-slate-200/80">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Inventory</span>
-            <button onClick={onAddInventory} aria-label="Add inventory item" title="Add inventory item" className="text-slate-500 hover:text-slate-800 transition-colors p-0.5"><Plus size={16} /></button>
+            <button onClick={() => setInventoryExpanded(expanded => !expanded)} aria-expanded={inventoryExpanded} className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-slate-900">
+              Inventory <ChevronDown size={14} className={`transition-transform ${inventoryExpanded ? "rotate-0" : "-rotate-90"}`} />
+            </button>
+            <button onClick={onAddInventory} aria-label="Add inventory company" title="Add inventory company" className="text-slate-500 hover:text-slate-800 transition-colors p-0.5"><Plus size={16} /></button>
           </div>
-          <div className="divide-y divide-slate-100">
-            {inventoryItems.map(item => <button key={item.id} onClick={() => onSelectInventory(item.id)} className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-all ${activeTab === `inventory-${item.id}` ? "bg-slate-50" : "hover:bg-slate-50/80"}`}>
-              <span className="flex items-center gap-3 min-w-0"><span className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-50 text-blue-700"><Package size={16} /></span><span className="min-w-0"><span className="block text-xs font-bold uppercase tracking-wide text-slate-800 truncate">{item.name}</span><span className="block text-xs font-mono font-bold mt-0.5 text-slate-500">{Number(item.quantity).toLocaleString(undefined, { maximumFractionDigits: 3 })} {item.unit}</span></span></span>
-              <ChevronRight size={14} className="text-slate-400 flex-shrink-0" />
-            </button>)}
-          </div>
+          {inventoryExpanded && <div className="divide-y divide-slate-100">
+            {inventoryItems.map(item => {
+              const txs = item.transactions || [];
+              const pending = txs.filter(tx => tx.paymentStatus === "not_paid").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+              const total = txs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+              return (
+                <button key={item.id} onClick={() => onSelectInventory(item.id)} className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-all ${activeTab === `inventory-${item.id}` ? "bg-slate-50" : "hover:bg-slate-50/80"}`}>
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-50 text-blue-700">
+                      <Package size={16} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-xs font-bold uppercase tracking-wide text-slate-800 truncate">{item.name}</span>
+                      <span className={`block text-xs font-mono font-bold mt-0.5 ${pending > 0 ? "text-amber-700" : total > 0 ? "text-[#059669]" : "text-slate-500"}`}>
+                        {pending > 0 ? `₹${pending.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Due` : total > 0 ? "₹0.00 (Paid)" : "₹0.00"}
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight size={14} className="text-slate-400 flex-shrink-0" />
+                </button>
+              );
+            })}
+          </div>}
         </div>
         {renderGroup("COMPANIES", companies, "company")}
         {renderGroup("BANKS", banks, "bank")}

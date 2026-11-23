@@ -1,4 +1,5 @@
-import { Menu, ArrowLeftRight, FileDown, Tag, BookOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Menu, ArrowLeftRight, Download, FileDown, Tag, BookOpen } from "lucide-react";
 import type { AppSettings } from "../hooks/useSettings";
 
 export function Header({
@@ -18,6 +19,26 @@ export function Header({
   onOpenPrograms?: () => void;
   onOpenVendors?: () => void;
 }) {
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      setInstallPrompt(event);
+    };
+    window.addEventListener("beforeinstallprompt", captureInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", captureInstallPrompt);
+  }, []);
+
+  const installApp = async () => {
+    if (installPrompt) {
+      await installPrompt.prompt();
+      setInstallPrompt(null);
+      return;
+    }
+    window.alert("To add this app to your home screen, use your browser menu and choose ‘Add to Home Screen’ or ‘Install App’.");
+  };
+
   return (
     <header className="bg-primary text-primary-foreground px-4 sm:px-6 py-4 flex flex-wrap sm:flex-nowrap items-center justify-between shadow-lg flex-shrink-0 gap-3">
       <div className="flex items-center gap-2 sm:gap-3">
@@ -58,6 +79,15 @@ export function Header({
           </button>
         )}
         <button
+          onClick={installApp}
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
+          title="Add this app to your home screen"
+        >
+          <Download size={16} />
+          <span className="hidden sm:inline">Install App</span>
+          <span className="sm:hidden">Install</span>
+        </button>
+        <button
           onClick={onOpenExchange}
           className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs sm:text-sm font-semibold transition-all"
         >
@@ -74,7 +104,7 @@ export function Header({
           <span className="sm:hidden">Report</span>
         </button>
 
-        <div className="text-right text-sm">
+        <div className="hidden text-right text-sm lg:block">
           <div className="text-white/60 text-xs">Today</div>
           <div className="font-mono font-semibold">
             {new Date().toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
