@@ -1,20 +1,23 @@
 import { useMemo, useState } from "react";
-import { TrendingUp, TrendingDown, ChevronRight, ArrowUpRight, ArrowDownRight, Wallet, Activity, Tag, Bell, Check, Search, Filter, X } from "lucide-react";
+import { TrendingUp, TrendingDown, ChevronRight, ArrowUpRight, ArrowDownRight, Wallet, Activity, Tag, Bell, Check, Search, Filter, X, Package } from "lucide-react";
 import type { Account, Program } from "../types";
 import { calcBalance, calcTotalCredit, calcTotalDebit, fmtSign, accountTypeIcon, CHART_COLORS, fmt } from "../types";
 import { DashboardTransfersLog } from "./DashboardTransfersLog";
 
 export function Dashboard({
   accounts,
+  inventoryItems = [],
   programs = [],
   onNavigate,
   onCompleteReminder,
 }: {
   accounts: Account[];
+  inventoryItems?: Array<{ id: number; name: string; transactions?: Array<{ amount: string | number; paymentStatus: "paid" | "not_paid" }> }>;
   programs?: Program[];
   onNavigate: (id: string) => void;
   onCompleteReminder?: (accountId: string, txId: string) => void;
 }) {
+  const businessAccounts = accounts.filter(account => !String(account.id).startsWith("inventory-"));
   const totalOpening = accounts.reduce((s, a) => s + a.openingBalance, 0);
   const totalCredit = accounts.reduce((s, a) => s + calcTotalCredit(a), 0);
   const totalDebit = accounts.reduce((s, a) => s + calcTotalDebit(a), 0);
@@ -241,16 +244,33 @@ export function Dashboard({
         </div>
       )}
 
+      {inventoryItems.length > 0 && <div className="space-y-3">
+        <div className="flex items-center justify-between"><h3 className="font-semibold text-sm text-foreground">Inventory Companies</h3><span className="text-xs text-muted-foreground">{inventoryItems.length} companies</span></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          {inventoryItems.map(item => {
+            const transactions = item.transactions || [];
+            const paidCount = transactions.filter(tx => tx.paymentStatus === "paid").length;
+            const unpaidCount = transactions.length - paidCount;
+            const pendingBalance = transactions.filter(tx => tx.paymentStatus === "not_paid").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+            return <button key={item.id} onClick={() => onNavigate(`inventory-${item.id}`)} className="group rounded-xl border border-blue-100 bg-white p-4 text-left transition-colors hover:border-blue-200">
+              <div className="mb-4 flex items-center justify-between"><div className="flex min-w-0 items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-blue-700"><Package size={16} /></span><div className="min-w-0"><p className="truncate text-sm font-bold text-slate-900">{item.name}</p><p className="text-[11px] text-slate-500">Inventory Account</p></div></div><ChevronRight size={15} className="text-slate-300 transition-transform group-hover:translate-x-0.5 group-hover:text-blue-600" /></div>
+              <div className="mb-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Balance amount</p><p className="mt-1 font-mono text-base font-bold text-amber-700">₹{pendingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div>
+              <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100 pt-3"><div><p className="text-[10px] text-slate-500">Paid transactions</p><p className="mt-0.5 font-mono text-sm font-bold text-emerald-600">{paidCount}</p></div><div className="pl-4"><p className="text-[10px] text-slate-500">Unpaid transactions</p><p className="mt-0.5 font-mono text-sm font-bold text-red-600">{unpaidCount}</p></div></div>
+            </button>;
+          })}
+        </div>
+      </div>}
+
       <div className="space-y-3">
         <h3 className="font-semibold text-sm text-foreground">Company Balances</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
-          {accounts.map(acc => {
+          {businessAccounts.map(acc => {
             const closing = calcBalance(acc);
             const isNegative = closing < 0;
-            const idx = accounts.findIndex(a => a.id === acc.id);
+            const idx = businessAccounts.findIndex(a => a.id === acc.id);
             const color = CHART_COLORS[idx % CHART_COLORS.length];
             return (
-              <button key={acc.id} onClick={() => onNavigate(acc.id)} className="bg-white rounded-xl sm:rounded-2xl border border-border p-3 sm:p-5 flex flex-col gap-2 sm:gap-3 text-left hover:shadow-md transition-all group relative overflow-hidden">
+              <button key={acc.id} onClick={() => onNavigate(acc.id)} className="bg-white rounded-xl sm:rounded-2xl border border-border p-3 sm:p-5 flex flex-col gap-2 sm:gap-3 text-left transition-colors group relative overflow-hidden">
                 <div className="flex items-center justify-between">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
                     {(() => { const Icon = accountTypeIcon(acc.type); return <Icon size={14} style={{ color: color }} />; })()}
@@ -272,13 +292,13 @@ export function Dashboard({
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="col-span-1 lg:col-span-2 space-y-3">
           <h3 className="font-semibold text-sm text-foreground">Account Summary</h3>
-          {accounts.map(acc => {
+          {businessAccounts.map(acc => {
             const closing = calcBalance(acc);
             const credit = calcTotalCredit(acc);
             const debit = calcTotalDebit(acc);
             const change = closing - acc.openingBalance;
             return (
-              <button key={acc.id} onClick={() => onNavigate(acc.id)} className="w-full bg-white rounded-xl border border-border p-4 text-left hover:shadow-md transition-all group">
+              <button key={acc.id} onClick={() => onNavigate(acc.id)} className="w-full bg-white rounded-xl border border-border p-4 text-left transition-colors group">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: acc.bgColor }}>

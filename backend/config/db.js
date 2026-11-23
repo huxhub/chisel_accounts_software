@@ -132,6 +132,19 @@ const connectDB = async () => {
     }
 
     await sequelize.sync();
+    try {
+      const [inventoryAmountColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('InventoryTransactions') AND LOWER(COLUMN_NAME) = LOWER('amount')`,
+        { replacements: [dbName] }
+      );
+      if (inventoryAmountColumns.length === 0) {
+        await sequelize.query('ALTER TABLE `InventoryTransactions` ADD COLUMN `amount` DECIMAL(14,2) NOT NULL DEFAULT 0');
+      }
+      await sequelize.query('ALTER TABLE `InventoryTransactions` MODIFY COLUMN `quantity` VARCHAR(255) NOT NULL');
+    } catch {
+      // InventoryTransactions table is created by sync on first boot
+    }
     const { migrateOldVendorsToLedgers } = await import('./migrateLedgers.js');
     await migrateOldVendorsToLedgers();
     console.log(`MySQL Connected: ${sequelize.config.host}/${sequelize.config.database}`);

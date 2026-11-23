@@ -1,12 +1,14 @@
-import { LayoutDashboard, Bell, ChevronRight, Settings, LogOut, History, Plus, BookOpen } from "lucide-react";
+import { LayoutDashboard, Bell, ChevronRight, Settings, LogOut, History, Plus, BookOpen, Package } from "lucide-react";
+import type { Item } from "./InventoryPage";
 import type { Account } from "../types";
 import type { AppSettings } from "../hooks/useSettings";
 import { calcBalance, fmtSign, accountTypeIcon } from "../types";
 
 export function Sidebar({
-  settings, accounts, activeTab, setActiveTab, activeRemindersCount,
+  inventoryItems, onAddInventory, onSelectInventory, settings, accounts, activeTab, setActiveTab, activeRemindersCount,
   mobileMenuOpen, setMobileMenuOpen, onOpenAddCompany, onOpenSettings, onLogout,
 }: {
+  inventoryItems: Item[]; onAddInventory: () => void; onSelectInventory: (id: number) => void;
   settings: AppSettings; accounts: Account[]; activeTab: string; setActiveTab: (tab: string) => void;
   activeRemindersCount: number; mobileMenuOpen: boolean; setMobileMenuOpen: (v: boolean) => void;
   onOpenAddCompany: (type: "company" | "bank" | "cash" | "overdraft") => void;
@@ -44,7 +46,7 @@ export function Sidebar({
                 key={acc.id}
                 onClick={() => navTo(acc.id)}
                 className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-all ${
-                  isActive ? "bg-slate-50 border-r-4 border-r-blue-600" : "hover:bg-slate-50/80"
+                  isActive ? "bg-slate-50" : "hover:bg-slate-50/80"
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -90,7 +92,7 @@ export function Sidebar({
             onClick={() => navTo("dashboard")}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
               activeTab === "dashboard"
-                ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
+                ? "bg-[#edf2f7] text-blue-600"
                 : "text-slate-700 hover:bg-slate-50"
             }`}
           >
@@ -102,7 +104,7 @@ export function Sidebar({
             onClick={() => navTo("reminders")}
             className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
               activeTab === "reminders"
-                ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
+                ? "bg-[#edf2f7] text-blue-600"
                 : "text-slate-700 hover:bg-slate-50"
             }`}
           >
@@ -121,7 +123,7 @@ export function Sidebar({
             onClick={() => navTo("history")}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
               activeTab === "history"
-                ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
+                ? "bg-[#edf2f7] text-blue-600"
                 : "text-slate-700 hover:bg-slate-50"
             }`}
           >
@@ -133,7 +135,7 @@ export function Sidebar({
             onClick={() => navTo("ledgers")}
             className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-bold transition-all ${
               activeTab === "ledgers"
-                ? "bg-[#edf2f7] text-blue-600 border-l-4 border-l-blue-600"
+                ? "bg-[#edf2f7] text-blue-600"
                 : "text-slate-700 hover:bg-slate-50"
             }`}
           >
@@ -143,6 +145,18 @@ export function Sidebar({
         </div>
 
         {/* Account Groups */}
+        <div>
+          <div className="bg-[#f1f5f9] px-4 py-2.5 flex items-center justify-between border-y border-slate-200/80">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Inventory</span>
+            <button onClick={onAddInventory} aria-label="Add inventory item" title="Add inventory item" className="text-slate-500 hover:text-slate-800 transition-colors p-0.5"><Plus size={16} /></button>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {inventoryItems.map(item => <button key={item.id} onClick={() => onSelectInventory(item.id)} className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-all ${activeTab === `inventory-${item.id}` ? "bg-slate-50" : "hover:bg-slate-50/80"}`}>
+              <span className="flex items-center gap-3 min-w-0"><span className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-blue-50 text-blue-700"><Package size={16} /></span><span className="min-w-0"><span className="block text-xs font-bold uppercase tracking-wide text-slate-800 truncate">{item.name}</span><span className="block text-xs font-mono font-bold mt-0.5 text-slate-500">{Number(item.quantity).toLocaleString(undefined, { maximumFractionDigits: 3 })} {item.unit}</span></span></span>
+              <ChevronRight size={14} className="text-slate-400 flex-shrink-0" />
+            </button>)}
+          </div>
+        </div>
         {renderGroup("COMPANIES", companies, "company")}
         {renderGroup("BANKS", banks, "bank")}
         {renderGroup("CASH", cashes, "cash")}
@@ -169,3 +183,4 @@ export function Sidebar({
     </aside>
   );
 }
+

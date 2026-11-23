@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useAccountsController } from "../controllers/useAccountsController";
 
@@ -20,6 +20,7 @@ import { ExchangeModal } from "./components/modals/ExchangeModal";
 import { ProgramModal } from "./components/modals/ProgramModal";
 import { DeleteAccountModal, DeleteTxModal, CompleteReminderModal } from "./components/modals/DeleteConfirmModals";
 import { SettingsModal } from "./components/modals/SettingsModal";
+import { AddInventoryDialog, InventoryDetail, inventoryRequest, type Item } from "./components/InventoryPage";
 import { LedgersPage } from "./components/LedgersPage";
 import { VoucherModal } from "./components/modals/VoucherModal";
 
@@ -52,6 +53,32 @@ export default function App() {
     deleteVoucher,
   } = useAccountsController(isAuthenticated);
   const { settings, setSettings, tempSettings, setTempSettings, showSettings, setShowSettings } = useSettings();
+
+  const [inventoryItems, setInventoryItems] = useState<Item[]>([]);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const refreshInventory = () => inventoryRequest().then(setInventoryItems).catch(() => {});
+  useEffect(() => { if (isAuthenticated) refreshInventory(); else setInventoryItems([]); }, [isAuthenticated]);
+  const accountsWithInventory = useMemo(() => [
+    ...accounts,
+    ...inventoryItems.map(item => ({
+      id: `inventory-${item.id}`,
+      name: item.name,
+      type: "company" as const,
+      openingBalance: 0,
+      color: "#1d4ed8",
+      bgColor: "#eff6ff",
+      createdAt: undefined,
+      transactions: (item.transactions || []).map(tx => ({
+        id: `inventory-${item.id}-${tx.id}`,
+        date: tx.createdAt.slice(0, 10),
+        description: `${tx.name} · ${tx.quantity} · ${tx.paymentStatus === "paid" ? "Paid" : "Not paid"}`,
+        type: "debit" as const,
+        amount: Number(tx.amount || 0),
+        reference: `Inventory #${tx.id}`,
+        accountId: `inventory-${item.id}`,
+      })),
+    })),
+  ], [accounts, inventoryItems]);
 
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
@@ -131,6 +158,9 @@ export default function App() {
         )}
 
         <Sidebar
+          inventoryItems={inventoryItems}
+          onAddInventory={() => { setInventoryOpen(true); setMobileMenuOpen(false); }}
+          onSelectInventory={id => { setActiveTab(`inventory-${id}`); setMobileMenuOpen(false); }}
           settings={settings}
           accounts={accounts}
           activeTab={activeTab}
@@ -147,11 +177,13 @@ export default function App() {
           {loading ? (
             activeTab === "dashboard" ? <DashboardSkeleton /> : <AccountDetailsSkeleton />
           ) : activeTab === "dashboard" ? (
-            <Dashboard accounts={accounts} programs={programs} onNavigate={setActiveTab} onCompleteReminder={promptCompleteReminder} />
+            <Dashboard accounts={accountsWithInventory} inventoryItems={inventoryItems} programs={programs} onNavigate={setActiveTab} onCompleteReminder={promptCompleteReminder} />
           ) : activeTab === "history" ? (
-            <HistoryPage accounts={accounts} programs={programs} onViewDoc={doc => setViewDoc(doc)} />
+            <HistoryPage accounts={accountsWithInventory} programs={programs} onViewDoc={doc => setViewDoc(doc)} />
           ) : activeTab === "reminders" ? (
             <RemindersPage accounts={accounts} onNavigate={setActiveTab} onAddTransaction={handleAddTx} onDeleteTransaction={txForm.deleteTransaction} onCompleteReminder={promptCompleteReminder} />
+          ) : typeof activeTab === "string" && activeTab.startsWith("inventory-") ? (
+            inventoryItems.find(item => `inventory-${item.id}` === activeTab) ? <InventoryDetail item={inventoryItems.find(item => `inventory-${item.id}` === activeTab)!} onTransactionsChanged={refreshInventory} /> : null
           ) : activeTab === "ledgers" || activeTab === "vendors" ? (
             <LedgersPage
               ledgers={ledgers}
@@ -199,7 +231,8 @@ export default function App() {
         </main>
       </div>
 
-      <ReportModal accounts={accounts} programs={programs} showReport={showReport} setShowReport={setShowReport} />
+      <AddInventoryDialog open={inventoryOpen} setOpen={setInventoryOpen} onItemsChanged={refreshInventory} />
+      <ReportModal accounts={accountsWithInventory} programs={programs} showReport={showReport} setShowReport={setShowReport} />
       <DocumentViewerModal viewDoc={viewDoc} setViewDoc={setViewDoc} />
       <AddAccountModal showAddCompany={accDetail.showAddCompany} setShowAddCompany={accDetail.setShowAddCompany} companyForm={accDetail.companyForm} setCompanyForm={accDetail.setCompanyForm} addCompany={accDetail.addCompany} />
       <AddTransactionModal showForm={txForm.showForm} setShowForm={txForm.setShowForm} activeAccount={accDetail.activeAccount} accounts={accounts} programs={programs} form={txForm.form} setForm={txForm.setForm} fileInputRef={txForm.fileInputRef} handleFileSelect={txForm.handleFileSelect} addTransaction={txForm.addTransaction} editingTxId={txForm.editingTxId} />
@@ -213,3 +246,4 @@ export default function App() {
     </div>
   );
 }
+
