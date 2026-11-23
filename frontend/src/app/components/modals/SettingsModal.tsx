@@ -3,6 +3,7 @@ import { Settings, X, Check, User, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import type { AppSettings } from "../../hooks/useSettings";
 import { authService } from "../../../services/authService";
+import { API_BASE_URL } from "../../../services/config";
 
 export function SettingsModal({
   showSettings,
@@ -24,6 +25,7 @@ export function SettingsModal({
   const [showPassword, setShowPassword] = useState(false);
   const [initialUsername, setInitialUsername] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (showSettings) {
@@ -67,13 +69,52 @@ export function SettingsModal({
         </div>
 
         <div className="p-6 space-y-5 flex-1 overflow-y-auto bg-gray-50/30">
+          <div className="space-y-2">
+            <label htmlFor="brand-logo" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Company logo</label>
+            <div className="flex items-center gap-4 border border-border rounded-xl bg-white p-4">
+              <div className="w-16 h-16 shrink-0 flex items-center justify-center bg-slate-50 border border-slate-200 overflow-hidden">
+                {tempSettings.logoUrl ? <img src={tempSettings.logoUrl} alt="Logo preview" className="w-full h-full object-contain" /> : <span className="text-xs text-slate-500">No logo</span>}
+              </div>
+              <div className="min-w-0 space-y-2">
+                <input id="brand-logo" type="file" accept="image/png,image/jpeg,image/webp" disabled={isUploading} className="block w-full text-xs text-slate-600 file:mr-2 file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:font-semibold file:text-slate-800" onChange={async e => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) { toast.error("Choose a PNG, JPEG or WebP image under 5 MB."); return; }
+                  setIsUploading(true);
+                  try {
+                    const image = await new Promise<string>((resolve, reject) => {
+                      const reader = new FileReader();
+                      reader.onload = () => resolve(String(reader.result));
+                      reader.onerror = () => reject(new Error('Could not read the image'));
+                      reader.readAsDataURL(file);
+                    });
+                    const token = localStorage.getItem('auth_token');
+                    const response = await fetch(`${API_BASE_URL}/api/branding/logo`, {
+                      method: 'POST', credentials: 'include',
+                      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                      body: JSON.stringify({ image }),
+                    });
+                    const result = await response.json();
+                    if (!response.ok || !result.url) throw new Error(result.message || 'Upload failed');
+                    setTempSettings(current => ({ ...current, logoUrl: result.url }));
+                    toast.success('Logo uploaded. Save settings to publish it.');
+                  } catch (error: any) { toast.error(error.message || 'Logo upload failed'); }
+                  finally { setIsUploading(false); }
+                }} />
+                <p className="text-xs text-slate-500">{isUploading ? 'Uploading?' : 'PNG, JPEG or WebP, up to 5 MB.'}</p>
+                {tempSettings.logoUrl && <button type="button" className="text-xs text-red-700 underline" onClick={() => setTempSettings(current => ({ ...current, logoUrl: '' }))}>Remove logo</button>}
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Company Name</label>
             <input
               type="text"
               value={tempSettings.companyName}
               onChange={e => setTempSettings({ ...tempSettings, companyName: e.target.value })}
-              placeholder="CHISEL"
+              placeholder="Golden Catch"
               className="w-full border border-border rounded-xl px-3.5 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-accent/25 focus:border-accent bg-white transition-all shadow-3xs font-semibold text-foreground"
             />
           </div>
@@ -185,13 +226,10 @@ export function SettingsModal({
           </button>
           <button
             type="button"
-            disabled={isSaving}
+            disabled={isSaving || isUploading}
             onClick={async () => {
               setIsSaving(true);
               try {
-                setSettings(tempSettings);
-                localStorage.setItem("chisel_settings", JSON.stringify(tempSettings));
-
                 const usernameChanged = username.trim() !== "" && username.trim() !== initialUsername;
                 const passwordChanged = password.trim() !== "";
 
@@ -200,11 +238,18 @@ export function SettingsModal({
                     username: usernameChanged ? username.trim() : undefined,
                     password: passwordChanged ? password.trim() : undefined,
                   });
-                  toast.success("Settings & account credentials saved!");
-                } else {
-                  toast.success("Branding settings saved successfully!");
+                  
                 }
 
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch(`${API_BASE_URL}/api/branding`, {
+                  method: 'PUT', credentials: 'include',
+                  headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                  body: JSON.stringify(tempSettings),
+                });
+                if (!response.ok) { const data = await response.json(); throw new Error(data.message || 'Failed to save branding'); }
+                setSettings(tempSettings);
+                toast.success("Settings saved successfully!");
                 setShowSettings(false);
               } catch (error: any) {
                 toast.error(error.message || "Failed to update settings");

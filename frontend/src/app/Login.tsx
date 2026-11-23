@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { authService } from '../services/authService';
 import { Lock, User, ArrowRight } from 'lucide-react';
-import chiselLogo from '../assets/logo.png';
+import type { AppSettings } from './hooks/useSettings';
 
-export default function Login({ onLogin }: { onLogin: () => void }) {
+export default function Login({ onLogin, settings }: { onLogin: () => void; settings: AppSettings }) {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -33,11 +33,11 @@ export default function Login({ onLogin }: { onLogin: () => void }) {
     <div className="min-h-screen bg-[#f8fafc] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-50 to-red-50/30">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <img src={chiselLogo} alt="Chisel Logo" className="w-20 h-20 object-contain" />
+          {settings.logoUrl ? <img src={settings.logoUrl} alt={`${settings.companyName} logo`} className="w-20 h-20 object-contain" /> : <span className="text-2xl font-bold text-primary tracking-wider">{settings.companyName}</span>}
         </div>
 
         <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900 tracking-tight">
-          Accounts Manager
+          {settings.companySubtitle}
         </h2>
         <p className="mt-2 text-center text-sm text-slate-600">
           {isLogin ? 'Sign in to access your dashboard' : 'Create a new account'}

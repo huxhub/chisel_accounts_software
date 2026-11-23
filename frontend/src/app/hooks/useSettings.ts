@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import chiselLogo from "../../assets/logo.png";
+import { API_BASE_URL } from "../../services/config";
 
 export interface AppSettings {
   companyName: string;
@@ -9,39 +9,28 @@ export interface AppSettings {
 }
 
 const DEFAULTS: AppSettings = {
-  companyName: "CHISEL",
+  companyName: "GOLDEN CATCH",
   companySubtitle: "Accounts Manager",
-  logoUrl: chiselLogo,
+  logoUrl: "",
   themeColor: "#c21818",
 };
 
 export function useSettings() {
-  const [settings, setSettings] = useState<AppSettings>(() => {
-    const saved = localStorage.getItem("chisel_settings");
-    if (saved) {
-      try {
-        return { ...DEFAULTS, ...JSON.parse(saved) };
-      } catch {
-        return DEFAULTS;
-      }
-    }
-    return DEFAULTS;
-  });
-  const [tempSettings, setTempSettings] = useState<AppSettings>({ ...settings });
+  const [settings, setSettings] = useState<AppSettings>(DEFAULTS);
+  const [tempSettings, setTempSettings] = useState<AppSettings>(DEFAULTS);
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty("--primary", settings.themeColor);
-    root.style.setProperty("--accent", settings.themeColor);
+    fetch(`${API_BASE_URL}/api/branding`)
+      .then(response => { if (!response.ok) throw new Error('Unable to load branding'); return response.json(); })
+      .then(data => { if (data) setSettings({ ...DEFAULTS, ...data }); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--primary", settings.themeColor);
+    document.documentElement.style.setProperty("--accent", settings.themeColor);
   }, [settings.themeColor]);
 
-  return {
-    settings,
-    setSettings,
-    tempSettings,
-    setTempSettings,
-    showSettings,
-    setShowSettings,
-  };
+  return { settings, setSettings, tempSettings, setTempSettings, showSettings, setShowSettings };
 }

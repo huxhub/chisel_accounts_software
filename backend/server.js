@@ -63,6 +63,7 @@ app.use('/api', rateLimit({
   legacyHeaders: false,
 }));
 
+import brandingRoutes from './routes/brandingRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import programRoutes from './routes/programRoutes.js';
 import vendorRoutes from './routes/vendorRoutes.js';
@@ -71,6 +72,7 @@ import voucherRoutes from './routes/voucherRoutes.js';
 import { protect } from './middleware/authMiddleware.js';
 
 // Routes
+app.use('/api/branding', brandingRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/accounts', protect, accountRoutes);
 app.use('/api/programs', protect, programRoutes);

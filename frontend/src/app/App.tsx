@@ -106,7 +106,7 @@ export default function App() {
     return (
       <>
         <Toaster richColors position="top-right" closeButton />
-        <Login onLogin={() => setIsAuthenticated(true)} />
+        <Login settings={settings} onLogin={() => setIsAuthenticated(true)} />
       </>
     );
   }
@@ -131,6 +131,7 @@ export default function App() {
         )}
 
         <Sidebar
+          settings={settings}
           accounts={accounts}
           activeTab={activeTab}
           setActiveTab={setActiveTab}

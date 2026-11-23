@@ -1,12 +1,13 @@
 import { LayoutDashboard, Bell, ChevronRight, Settings, LogOut, History, Plus, BookOpen } from "lucide-react";
 import type { Account } from "../types";
+import type { AppSettings } from "../hooks/useSettings";
 import { calcBalance, fmtSign, accountTypeIcon } from "../types";
 
 export function Sidebar({
-  accounts, activeTab, setActiveTab, activeRemindersCount,
+  settings, accounts, activeTab, setActiveTab, activeRemindersCount,
   mobileMenuOpen, setMobileMenuOpen, onOpenAddCompany, onOpenSettings, onLogout,
 }: {
-  accounts: Account[]; activeTab: string; setActiveTab: (tab: string) => void;
+  settings: AppSettings; accounts: Account[]; activeTab: string; setActiveTab: (tab: string) => void;
   activeRemindersCount: number; mobileMenuOpen: boolean; setMobileMenuOpen: (v: boolean) => void;
   onOpenAddCompany: (type: "company" | "bank" | "cash" | "overdraft") => void;
   onOpenSettings: () => void; onLogout: () => void;
@@ -77,6 +78,10 @@ export function Sidebar({
         mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
       }`}
     >
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-200">
+        {settings.logoUrl && <img src={settings.logoUrl} alt={`${settings.companyName} logo`} className="w-10 h-10 object-contain" />}
+        <div className="min-w-0"><p className="text-sm font-bold text-slate-900 truncate">{settings.companyName}</p><p className="text-xs text-slate-500 truncate">{settings.companySubtitle}</p></div>
+      </div>
       {/* Scrollable Navigation Items */}
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {/* Top Links */}
