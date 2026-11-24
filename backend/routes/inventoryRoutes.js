@@ -55,9 +55,10 @@ router.get('/:id/transactions', async (req, res) => {
 });
 
 router.post('/:id/transactions', async (req, res) => {
-  const { name, quantity, amount, paymentStatus } = req.body;
+  const { name, quantity, unit, amount, paymentStatus } = req.body;
   if (typeof name !== 'string' || !name.trim() || name.trim().length > 255 ||
       typeof quantity !== 'string' || !quantity.trim() || quantity.trim().length > 255 ||
+      !['kg', 'box'].includes(unit) ||
       !Number.isFinite(Number(amount)) || Number(amount) < 0 || Number(amount) >= 1000000000000 ||
       !/^\d+(\.\d{1,2})?$/.test(String(amount)) ||
       !['paid', 'not_paid'].includes(paymentStatus)) {
@@ -67,7 +68,7 @@ router.post('/:id/transactions', async (req, res) => {
     const item = await InventoryItem.findByPk(req.params.id);
     if (!item) return res.status(404).json({ message: 'Inventory company not found' });
     const transaction = await InventoryTransaction.create({
-      inventoryItemId: item.id, name: name.trim(), quantity: quantity.trim(), unit: 'kg', amount: Number(amount), paymentStatus,
+      inventoryItemId: item.id, name: name.trim(), quantity: quantity.trim(), unit, amount: Number(amount), paymentStatus,
     });
     res.status(201).json(transaction);
   } catch (error) { res.status(500).json({ message: error.message }); }
@@ -77,12 +78,12 @@ router.put('/:id/transactions/:transactionId', async (req, res) => {
   try {
     const transaction = await InventoryTransaction.findOne({ where: { id: req.params.transactionId, inventoryItemId: req.params.id } });
     if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
-    const { name = transaction.name, quantity = transaction.quantity, amount = transaction.amount, paymentStatus = transaction.paymentStatus } = req.body;
+    const { name = transaction.name, quantity = transaction.quantity, unit = transaction.unit, amount = transaction.amount, paymentStatus = transaction.paymentStatus } = req.body;
     if (typeof name !== 'string' || !name.trim() || typeof quantity !== 'string' || !quantity.trim() || quantity.trim().length > 255 ||
-        !Number.isFinite(Number(amount)) || Number(amount) < 0 || !['paid', 'not_paid'].includes(paymentStatus)) {
+        !['kg', 'box'].includes(unit) || !Number.isFinite(Number(amount)) || Number(amount) < 0 || !['paid', 'not_paid'].includes(paymentStatus)) {
       return res.status(400).json({ message: 'Enter valid transaction details.' });
     }
-    await transaction.update({ name: name.trim(), quantity: quantity.trim(), amount: Number(amount), paymentStatus });
+    await transaction.update({ name: name.trim(), quantity: quantity.trim(), unit, amount: Number(amount), paymentStatus });
     res.json(transaction);
   } catch (error) { res.status(500).json({ message: error.message }); }
 });

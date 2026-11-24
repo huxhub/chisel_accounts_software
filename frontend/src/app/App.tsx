@@ -91,8 +91,9 @@ export default function App() {
     })),
   ], [accounts, inventoryItems]);
 
-  const [activeTab, setActiveTab] = useState<string>("dashboard");
+  const [activeTab, setActiveTab] = useState<string>(() => sessionStorage.getItem("golden-catch-active-page") || "dashboard");
   useEffect(() => {
+    sessionStorage.setItem("golden-catch-active-page", activeTab);
     document.querySelector("main")?.scrollTo({ top: 0, behavior: "auto" });
   }, [activeTab]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
