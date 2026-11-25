@@ -37,10 +37,16 @@ const envOrigins = (process.env.CORS_ORIGINS || '')
   .filter(Boolean);
 
 const allowedOrigins = Array.from(new Set([...defaultOrigins, ...envOrigins]));
+// Vercel creates a distinct hostname for each deployment preview. Restrict the
+// pattern to this project and team instead of allowing every vercel.app origin.
+const chiselVercelOrigin = /^https:\/\/chisel-accounts-software(?:-[a-z0-9]+)?-uxhub2026\.vercel\.app$/i;
+
+const isAllowedOrigin = (origin) =>
+  allowedOrigins.includes(origin) || chiselVercelOrigin.test(origin);
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || isAllowedOrigin(origin)) {
       return callback(null, true);
     }
     console.warn(`[CORS Blocked Origin]: ${origin}`);
