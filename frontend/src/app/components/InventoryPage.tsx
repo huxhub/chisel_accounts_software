@@ -460,7 +460,6 @@ function SalesEntryDialog({
 export function InventoryDetail({
   item,
   accounts,
-  section = "purchase",
   onTransactionsChanged,
   onDeleteCompany,
 }: {
@@ -477,9 +476,6 @@ export function InventoryDetail({
   const [deletingCompany, setDeletingCompany] = useState(false);
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [activeView, setActiveView] = useState<"purchase">("purchase");
-  const [salesOpen, setSalesOpen] = useState(false);
-  const [editingSale, setEditingSale] = useState<InventoryTransaction | null>(null);
   const [partyName, setPartyName] = useState("");
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -496,11 +492,9 @@ export function InventoryDetail({
   const [paymentFilter, setPaymentFilter] = useState("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [expandedSaleBatches, setExpandedSaleBatches] = useState<Set<string>>(new Set());
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [showItemSuggestions, setShowItemSuggestions] = useState(false);
   useEffect(() => {
-    setActiveView("purchase");
     setLoading(true);
     setError("");
     inventoryRequest(`/${item.id}/transactions`)
@@ -514,7 +508,7 @@ export function InventoryDetail({
     setPaymentFilter("all");
     setFromDate("");
     setToDate("");
-  }, [activeView]);
+  }, []);
   const resetForm = () => {
     setPartyName("");
     setName("");
@@ -573,12 +567,6 @@ export function InventoryDetail({
     }
   };
   const editTransaction = (tx: InventoryTransaction) => {
-    if ((tx.transactionType || "purchase") === "sale") {
-      setEditingSale(tx);
-      setError("");
-      setSalesOpen(true);
-      return;
-    }
     const nextUnit = tx.unit || "kg";
     const nextQuantity = String(tx.quantity);
     setEditingId(tx.id);
@@ -597,7 +585,6 @@ export function InventoryDetail({
         : "",
     );
     setPaymentStatus(tx.paymentStatus);
-    setActiveView((tx.transactionType || "purchase") === "sale" ? "sale" : "purchase");
     setError("");
     setOpen(true);
   };
@@ -657,12 +644,8 @@ export function InventoryDetail({
     }
   };
   const displayedTransactions = transactions.filter(
-    (tx) => (tx.transactionType || "purchase") === activeView,
+    (tx) => (tx.transactionType || "purchase") === "purchase",
   );
-  const editingTransaction = editingId
-    ? transactions.find((entry) => entry.id === editingId)
-    : undefined;
-  const isSaleEdit = (editingTransaction?.transactionType || "purchase") === "sale";
   const totalAmount = displayedTransactions.reduce(
     (sum, tx) => sum + Number(tx.amount || 0),
     0,
@@ -703,33 +686,21 @@ export function InventoryDetail({
       (!fromDate || String(tx.createdAt).slice(0, 10) >= fromDate) &&
       (!toDate || String(tx.createdAt).slice(0, 10) <= toDate),
   );
-  const saleGroups = activeView === "sale"
-    ? Array.from(filtered.reduce((groups, tx) => {
-      const key = tx.saleBatchId || `single-${tx.id}`;
-      const group = groups.get(key) || [];
-      group.push(tx);
-      groups.set(key, group);
-      return groups;
-    }, new Map<string, InventoryTransaction[]>()).entries())
-    : [];
 
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeView, search, itemFilter, paymentFilter, fromDate, toDate, filtered.length, saleGroups.length]);
+  }, [search, itemFilter, paymentFilter, fromDate, toDate, filtered.length]);
 
-  const totalItems = activeView === "sale" ? saleGroups.length : filtered.length;
+  const totalItems = filtered.length;
   const totalPages = Math.ceil(totalItems / pageSize);
 
-  const paginatedSaleGroups = activeView === "sale"
-    ? saleGroups.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-    : [];
-
-  const paginatedFiltered = activeView === "purchase"
-    ? filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-    : [];
+  const paginatedFiltered = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
   const itemSuggestions = Array.from(
     new Set(displayedTransactions.map((tx) => tx.name.trim()).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b));
@@ -790,7 +761,7 @@ export function InventoryDetail({
             {displayedTransactions.length}
           </div>
           <div className="text-xs text-slate-500 mt-1">
-            {activeView} transactions
+            purchase transactions
           </div>
         </div>
         <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
@@ -803,7 +774,7 @@ export function InventoryDetail({
             })}
           </div>
           <div className="text-xs text-blue-600 mt-1">
-            Across {activeView} entries
+            Across purchase entries
           </div>
         </div>
         <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-4">
@@ -944,46 +915,7 @@ export function InventoryDetail({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {activeView === "sale" ? paginatedSaleGroups.map(([batchId, group], localIndex) => {
-                  const index = (currentPage - 1) * pageSize + localIndex;
-                  const first = group[0];
-                  const expanded = expandedSaleBatches.has(batchId);
-                  const amount = group.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-                  const paid = group.reduce((sum, tx) => sum + Number(tx.paidAmount ?? (tx.paymentStatus === "paid" ? tx.amount : 0)), 0);
-                  const pending = Math.max(0, amount - paid);
-                  return (
-                    <Fragment key={batchId}>
-                      <tr key={batchId} onClick={() => setExpandedSaleBatches(current => {
-                        const next = new Set(current);
-                        if (next.has(batchId)) next.delete(batchId); else next.add(batchId);
-                        return next;
-                      })} className="cursor-pointer bg-white hover:bg-slate-50">
-                        <td className="px-3 py-5 font-mono text-slate-500">{index + 1}</td>
-                        <td className="whitespace-nowrap px-3 py-5 text-slate-500">{new Date(first.createdAt).toLocaleDateString()}</td>
-                        <td className="px-3 py-5 font-semibold text-slate-800"><span className="inline-flex items-center gap-2"><ChevronRight size={16} className={`transition-transform ${expanded ? "rotate-90" : ""}`} />{first.partyName || "Unassigned"}</span></td>
-                        <td className="px-3 py-5 font-medium text-slate-600">{group.length} item{group.length === 1 ? "" : "s"}</td>
-                        <td className="px-3 py-5 text-slate-500">Click to view</td>
-                        <td className="px-3 py-5 text-right font-mono font-bold text-slate-700">₹{amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-5 text-right font-mono text-emerald-700">₹{paid.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-5 text-right font-mono font-semibold text-amber-700">₹{pending.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                        <td className="px-3 py-5 text-right text-xs font-semibold text-blue-700">{expanded ? "Hide items" : "View items"}</td>
-                      </tr>
-                      {expanded && group.map((tx) => {
-                        const itemPaid = Number(tx.paidAmount ?? (tx.paymentStatus === "paid" ? tx.amount : 0));
-                        const itemPending = Math.max(0, Number(tx.amount || 0) - itemPaid);
-                        return <tr key={tx.id} className="bg-blue-50/40">
-                          <td className="px-3 py-4"></td><td className="px-3 py-4 text-xs text-slate-500">Item</td><td className="px-3 py-4"></td>
-                          <td className="px-3 py-4 font-semibold text-slate-700">{tx.name}</td>
-                          <td className="px-3 py-4 font-mono text-slate-700">{tx.quantity} <span className="text-xs uppercase text-slate-500">{tx.unit}</span></td>
-                          <td className="px-3 py-4 text-right font-mono">₹{Number(tx.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="px-3 py-4 text-right font-mono text-emerald-700">₹{itemPaid.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="px-3 py-4 text-right font-mono text-amber-700">₹{itemPending.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                          <td className="px-3 py-4"><div className="flex justify-end gap-1"><button onClick={() => editTransaction(tx)} className="rounded p-2 text-slate-400 hover:bg-blue-100 hover:text-blue-600" title="Edit sale"><Edit3 size={15} /></button><button onClick={() => deleteTransaction(tx)} className="rounded p-2 text-slate-400 hover:bg-red-100 hover:text-red-600" title="Delete sale item"><Trash2 size={15} /></button></div></td>
-                        </tr>;
-                      })}
-                    </Fragment>
-                  );
-                }) : paginatedFiltered.map((tx, localIndex) => {
+                {paginatedFiltered.map((tx, localIndex) => {
                   const index = (currentPage - 1) * pageSize + localIndex;
                   const paid = Number(
                     tx.paidAmount ??
@@ -1070,23 +1002,6 @@ export function InventoryDetail({
           pageSize={pageSize}
         />
       </section>
-      <SalesEntryDialog
-        open={salesOpen}
-        setOpen={(value) => {
-          setSalesOpen(value);
-          if (!value) setEditingSale(null);
-        }}
-        item={item}
-        accounts={accounts}
-        editingSale={editingSale}
-        onSaved={(entries) => {
-          setTransactions((current) => editingSale
-            ? current.map((entry) => entry.id === entries[0].id ? entries[0] : entry)
-            : [...entries, ...current]);
-          setEditingSale(null);
-          onTransactionsChanged();
-        }}
-      />
       <Dialog
         open={open}
         onOpenChange={(value) => {
@@ -1099,29 +1014,27 @@ export function InventoryDetail({
         <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-5 sm:max-w-xl sm:p-6">
           <DialogHeader>
             <DialogTitle>
-              {editingId ? `Edit ${isSaleEdit ? "sale" : "purchase"}` : "Add purchase"}
+              {editingId ? "Edit purchase" : "Add purchase"}
             </DialogTitle>
             <DialogDescription>
               {editingId
-                ? `Update this inventory ${isSaleEdit ? "sale" : "purchase"} for ${item.name}.`
+                ? `Update this inventory purchase for ${item.name}.`
                 : `Add an inventory purchase for ${item.name}.`}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={submit} className="space-y-5">
             <label className="block text-sm font-semibold text-slate-700">
-              {isSaleEdit ? "Customer name" : "Supplier name"}
+              Supplier name
               <input
                 required
                 maxLength={255}
                 value={partyName}
                 onChange={(e) => setPartyName(e.target.value)}
                 className={fieldClass}
-                placeholder={isSaleEdit ? "Customer name" : "Supplier name"}
+                placeholder="Supplier name"
               />
               <span className="mt-1 block text-xs font-normal text-slate-500">
-                {isSaleEdit
-                  ? "The customer associated with this sale."
-                  : "Use the same name for multiple purchased items."}
+                Use the same name for multiple purchased items.
               </span>
             </label>
             <label className="block text-sm font-semibold text-slate-700">
@@ -1252,47 +1165,42 @@ export function InventoryDetail({
               </span>
             </label>
             <label className="block text-sm font-semibold text-slate-700">
-              {isSaleEdit ? "Credit received to company" : "Debit paid from company"}
+              Debit paid from company
               <select value={linkedAccountId} onChange={(e) => setLinkedAccountId(e.target.value)} className={fieldClass}>
                 <option value="">Do not update a company balance</option>
                 {accounts.map((account) => <option key={account.id} value={account.id}>{account.name}</option>)}
               </select>
               <span className="mt-1 block text-xs font-normal text-slate-500">
-                {isSaleEdit
-                  ? "Only the received amount is credited. Editing received or pending updates the company automatically."
-                  : "Only the paid amount is debited. Editing paid or pending updates the company automatically."}
+                Only the paid amount is debited. Editing paid or pending updates the company automatically.
               </span>
             </label>
-            {(activeView === "purchase" || isSaleEdit) && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="block text-sm font-semibold text-slate-700">
-                  {isSaleEdit ? "Received amount" : "Paid amount"}
-                  <input
-                    type="number"
-                    min="0"
-                    max={amount || undefined}
-                    step="0.01"
-                    value={paidAmount}
-                    onChange={(e) => {
-                      const nextPaid = e.target.value;
-                      setPaidAmount(nextPaid);
-                      setPaymentStatus(
-                        Number(nextPaid) >= Number(amount) && Number(amount) > 0
-                          ? "paid"
-                          : Number(nextPaid) > 0
-                            ? "partial"
-                            : "not_paid",
-                      );
-                    }}
-                    className={fieldClass}
-                    placeholder="0.00"
-                  />
-                  <span className="mt-1 block text-xs font-normal text-slate-500">
-                    {isSaleEdit
-                      ? "Amount already received for this sale."
-                      : "Amount already paid toward this purchase."}
-                  </span>
-                </label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-semibold text-slate-700">
+                Paid amount
+                <input
+                  type="number"
+                  min="0"
+                  max={amount || undefined}
+                  step="0.01"
+                  value={paidAmount}
+                  onChange={(e) => {
+                    const nextPaid = e.target.value;
+                    setPaidAmount(nextPaid);
+                    setPaymentStatus(
+                      Number(nextPaid) >= Number(amount) && Number(amount) > 0
+                        ? "paid"
+                        : Number(nextPaid) > 0
+                          ? "partial"
+                          : "not_paid",
+                    );
+                  }}
+                  className={fieldClass}
+                  placeholder="0.00"
+                />
+                <span className="mt-1 block text-xs font-normal text-slate-500">
+                  Amount already paid toward this purchase.
+                </span>
+              </label>
                 <label className="block text-sm font-semibold text-slate-700">
                   Pending amount
                   <input
@@ -1332,7 +1240,6 @@ export function InventoryDetail({
                   </span>
                 </label>
               </div>
-            )}
             <div className="text-sm font-semibold text-slate-700">
               Payment status:{" "}
               <span className="font-normal">
