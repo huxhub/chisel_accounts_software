@@ -4,6 +4,7 @@ import { ledgerService } from "../../services/ledgerService";
 import type { LedgerStatement } from "../types";
 import { fmt } from "../types";
 import { toast } from "sonner";
+import { Pagination } from "./ui/pagination";
 
 export function LedgerStatementView({
   ledgerId,
@@ -18,6 +19,8 @@ export function LedgerStatementView({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 15;
 
   const fetchStatement = useCallback(async () => {
     try {
@@ -65,6 +68,15 @@ export function LedgerStatementView({
       return true;
     });
   }, [rows, searchQuery, typeFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [ledgerId, searchQuery, typeFilter, filteredRows.length]);
+
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, currentPage, pageSize]);
 
   if (loading) {
     return (
@@ -234,7 +246,7 @@ export function LedgerStatementView({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredRows.map((row) => (
+                {paginatedRows.map((row) => (
                   <tr key={row.id} className="hover:bg-gray-50/80 transition-colors font-medium">
                     <td className="py-3 px-4 text-center font-mono text-muted-foreground">
                       {row.date.split("-").reverse().join("/")}
@@ -290,6 +302,13 @@ export function LedgerStatementView({
             </table>
           </div>
         )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredRows.length / pageSize)}
+          onPageChange={setCurrentPage}
+          totalItems={filteredRows.length}
+          pageSize={pageSize}
+        />
       </div>
     </div>
   );

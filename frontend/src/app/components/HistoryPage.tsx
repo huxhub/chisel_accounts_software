@@ -54,7 +54,7 @@ export function HistoryPage({ accounts, programs = [], onViewDoc }: { accounts: 
   }, [summary.byAccount]);
 
   const totalAssets = assets.reduce((s, a) => s + a.balance, 0);
-  const totalLiabilities = Math.abs(liabilities.reduce((s, a) => s + a.balance, 0));
+  const totalLiabilities = liabilities.reduce((s, a) => s + Math.abs(a.balance), 0);
   const netWorth = totalAssets - totalLiabilities;
 
   // P&L splits
@@ -159,8 +159,8 @@ export function HistoryPage({ accounts, programs = [], onViewDoc }: { accounts: 
             className="text-xs border border-border rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-red-100 focus:border-red-300 outline-none transition-all min-w-[120px]"
           >
             <option value="">All Types</option>
-            <option value="credit">Credits Only</option>
-            <option value="debit">Debits Only</option>
+            <option value="credit">Credits (Sales / Inflows)</option>
+            <option value="debit">Debits (Purchases / Outflows)</option>
           </select>
 
           <select
@@ -179,10 +179,10 @@ export function HistoryPage({ accounts, programs = [], onViewDoc }: { accounts: 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-5">
         {[
-          { label: "Profit", value: `+${fmtSign(summary.totalCredits > summary.totalDebits ? summary.totalCredits - summary.totalDebits : 0)}`, icon: TrendingUp, bg: "bg-emerald-50", iconColor: "text-emerald-600", border: "border-emerald-100", valueColor: "text-emerald-700" },
-          { label: "Loss", value: `-${fmtSign(summary.totalDebits > summary.totalCredits ? summary.totalDebits - summary.totalCredits : 0)}`, icon: TrendingDown, bg: "bg-red-50", iconColor: "text-red-500", border: "border-red-100", valueColor: "text-red-600" },
-          { label: "Total Credits", value: `+${fmtSign(summary.totalCredits)}`, icon: TrendingUp, bg: "bg-emerald-50", iconColor: "text-emerald-600", border: "border-emerald-100", valueColor: "text-emerald-700" },
-          { label: "Total Debits", value: `-${fmtSign(summary.totalDebits)}`, icon: TrendingDown, bg: "bg-red-50", iconColor: "text-red-500", border: "border-red-100", valueColor: "text-red-600" },
+          { label: "Profit", value: summary.totalCredits > summary.totalDebits ? `+₹${fmt(summary.totalCredits - summary.totalDebits)}` : "₹0.00", icon: TrendingUp, bg: "bg-emerald-50", iconColor: "text-emerald-600", border: "border-emerald-100", valueColor: "text-emerald-700" },
+          { label: "Loss", value: summary.totalDebits > summary.totalCredits ? `-₹${fmt(summary.totalDebits - summary.totalCredits)}` : "₹0.00", icon: TrendingDown, bg: "bg-red-50", iconColor: "text-red-500", border: "border-red-100", valueColor: "text-red-600" },
+          { label: "Total Credits", value: summary.totalCredits > 0 ? `+₹${fmt(summary.totalCredits)}` : "₹0.00", icon: TrendingUp, bg: "bg-emerald-50", iconColor: "text-emerald-600", border: "border-emerald-100", valueColor: "text-emerald-700" },
+          { label: "Total Debits", value: summary.totalDebits > 0 ? `-₹${fmt(summary.totalDebits)}` : "₹0.00", icon: TrendingDown, bg: "bg-red-50", iconColor: "text-red-500", border: "border-red-100", valueColor: "text-red-600" },
           { label: "Closing Balance", value: fmtSign(summary.totalClosingBalance), icon: Scale, bg: summary.totalClosingBalance >= 0 ? "bg-indigo-50" : "bg-red-50", iconColor: summary.totalClosingBalance >= 0 ? "text-indigo-600" : "text-red-500", border: summary.totalClosingBalance >= 0 ? "border-indigo-100" : "border-red-100", valueColor: summary.totalClosingBalance >= 0 ? "text-indigo-700" : "text-red-600" },
         ].map(kpi => (
           <div key={kpi.label} className={`bg-white rounded-xl sm:rounded-2xl border ${kpi.border} p-4 sm:p-5 flex flex-col justify-between gap-3 shadow-2xs hover:shadow-xs transition-all`}>
@@ -384,6 +384,11 @@ export function HistoryPage({ accounts, programs = [], onViewDoc }: { accounts: 
                         <span className="text-[10px] text-muted-foreground font-mono">
                           {tx.date.split("-").reverse().join("/")}
                         </span>
+                        {tx.vendorOrCustomerName && (
+                          <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium truncate max-w-[120px]">
+                            {tx.vendorOrCustomerName}
+                          </span>
+                        )}
                         {tx.reference && (
                           <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono truncate max-w-[100px]">
                             Ref: {tx.reference}
@@ -455,8 +460,13 @@ export function HistoryPage({ accounts, programs = [], onViewDoc }: { accounts: 
                         </td>
                         <td className="px-4 py-3 text-foreground">
                           <div className="font-medium">{tx.description}</div>
-                          {(tx.exchangeType || tx.dueDate) && (
+                          {(tx.vendorOrCustomerName || tx.exchangeType || tx.dueDate) && (
                             <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              {tx.vendorOrCustomerName && (
+                                <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-medium">
+                                  {tx.vendorOrCustomerName}
+                                </span>
+                              )}
                               {tx.exchangeType && (
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold capitalize ${tx.exchangeType === "loan" ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"}`}>
                                   {tx.exchangeType}

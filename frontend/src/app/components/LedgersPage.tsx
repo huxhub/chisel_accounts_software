@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Users, ShoppingBag, ArrowRightLeft, Plus, Search, Trash2, ChevronRight, BookOpen, CreditCard, Receipt, X } from "lucide-react";
 import type { Ledger, Account, Program } from "../types";
 import { fmt } from "../types";
 import { LedgerStatementView } from "./LedgerStatementView";
+import { Pagination } from "./ui/pagination";
 
 export function LedgersPage({
   ledgers = [],
@@ -41,6 +42,18 @@ export function LedgersPage({
 
   const currentLedgers = ledgers.filter(l => l.type === activeTab);
   const filteredLedgers = currentLedgers.filter(l => l.name.toLowerCase().includes(search.toLowerCase()));
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, search, filteredLedgers.length]);
+
+  const paginatedLedgers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredLedgers.slice(start, start + pageSize);
+  }, [filteredLedgers, currentPage, pageSize]);
 
   // Tab stats
   const totalCount = currentLedgers.length;
@@ -206,7 +219,7 @@ export function LedgersPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {filteredLedgers.map((l) => (
+                {paginatedLedgers.map((l) => (
                   <tr
                     key={l.id}
                     onClick={() => setSelectedLedgerId(l.id)}
@@ -296,6 +309,13 @@ export function LedgersPage({
             </table>
           </div>
         )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredLedgers.length / pageSize)}
+          onPageChange={setCurrentPage}
+          totalItems={filteredLedgers.length}
+          pageSize={pageSize}
+        />
       </div>
 
       {/* Add Ledger Modal */}

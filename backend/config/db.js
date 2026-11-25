@@ -133,6 +133,18 @@ const connectDB = async () => {
 
     await sequelize.sync();
     try {
+      const [salesLinkedAccountColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('SalesTransactions') AND LOWER(COLUMN_NAME) = LOWER('linkedAccountId')`,
+        { replacements: [dbName] }
+      );
+      if (salesLinkedAccountColumns.length === 0) {
+        await sequelize.query('ALTER TABLE `SalesTransactions` ADD COLUMN `linkedAccountId` INT NULL');
+      }
+    } catch {
+      // SalesTransactions table is created by sync on first boot
+    }
+    try {
       const [inventoryAmountColumns] = await sequelize.query(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
          WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('InventoryTransactions') AND LOWER(COLUMN_NAME) = LOWER('amount')`,

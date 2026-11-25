@@ -258,7 +258,7 @@ export function Dashboard({
         <div className="flex items-center justify-between"><h3 className="font-semibold text-sm text-foreground">Inventory Companies</h3><span className="text-xs text-muted-foreground">{inventoryItems.length} companies</span></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {inventoryItems.map(item => {
-            const transactions = item.transactions || [];
+            const transactions = (item.transactions || []).filter(tx => (tx.transactionType || "purchase") === "purchase");
             const totalAmount = transactions.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
             const paidAmount = transactions.reduce(
               (sum, tx) => sum + Number(tx.paidAmount ?? (tx.paymentStatus === "paid" ? tx.amount : 0)),

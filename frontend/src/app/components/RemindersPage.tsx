@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Bell, Trash2, Check, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Account } from "../types";
 import { fmt, formatLocalDate } from "../types";
+import { Pagination } from "./ui/pagination";
 
 export function RemindersPage({
   accounts,
@@ -56,6 +57,18 @@ export function RemindersPage({
   const currentList = tab === "active" ? activeReminders : completedReminders;
   const todayStr = formatLocalDate();
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tab, accounts, currentList.length]);
+
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return currentList.slice(start, start + pageSize);
+  }, [currentList, currentPage, pageSize]);
+
   return (
     <div className="p-6 space-y-6 w-full">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -103,7 +116,7 @@ export function RemindersPage({
                 </tr>
               </thead>
               <tbody>
-                {currentList.map((rem: any) => {
+                {paginatedList.map((rem: any) => {
                   const isOverdue = rem.dueDate < todayStr;
                   const isDueToday = rem.dueDate === todayStr;
                   const statusLabel = tab === "completed" ? "Completed" : isOverdue ? "Overdue" : isDueToday ? "Due Today" : "Upcoming";
@@ -138,6 +151,13 @@ export function RemindersPage({
             </table>
           </div>
         )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(currentList.length / pageSize)}
+          onPageChange={setCurrentPage}
+          totalItems={currentList.length}
+          pageSize={pageSize}
+        />
       </div>
 
       {showReminderModal && (

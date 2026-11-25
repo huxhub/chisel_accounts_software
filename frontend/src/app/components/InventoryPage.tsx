@@ -21,6 +21,7 @@ import {
 } from "./ui/dialog";
 import { API_BASE_URL } from "../../services/config";
 import type { Account } from "../types";
+import { Pagination } from "./ui/pagination";
 
 export type InventoryTransaction = {
   id: number;
@@ -459,11 +460,13 @@ function SalesEntryDialog({
 export function InventoryDetail({
   item,
   accounts,
+  section = "purchase",
   onTransactionsChanged,
   onDeleteCompany,
 }: {
   item: Item;
   accounts: Account[];
+  section?: "purchase" | "sale";
   onTransactionsChanged: () => void;
   onDeleteCompany: () => Promise<void>;
 }) {
@@ -474,9 +477,7 @@ export function InventoryDetail({
   const [deletingCompany, setDeletingCompany] = useState(false);
   const [error, setError] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [activeView, setActiveView] = useState<"purchase" | "sale">(() =>
-    sessionStorage.getItem(`inventory-view-${item.id}`) === "sale" ? "sale" : "purchase",
-  );
+  const [activeView, setActiveView] = useState<"purchase">("purchase");
   const [salesOpen, setSalesOpen] = useState(false);
   const [editingSale, setEditingSale] = useState<InventoryTransaction | null>(null);
   const [partyName, setPartyName] = useState("");
@@ -499,7 +500,7 @@ export function InventoryDetail({
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [showItemSuggestions, setShowItemSuggestions] = useState(false);
   useEffect(() => {
-    setActiveView(sessionStorage.getItem(`inventory-view-${item.id}`) === "sale" ? "sale" : "purchase");
+    setActiveView("purchase");
     setLoading(true);
     setError("");
     inventoryRequest(`/${item.id}/transactions`)
@@ -508,15 +509,18 @@ export function InventoryDetail({
       .finally(() => setLoading(false));
   }, [item.id]);
   useEffect(() => {
-    sessionStorage.setItem(`inventory-view-${item.id}`, activeView);
-  }, [item.id, activeView]);
-  useEffect(() => {
     setSearch("");
     setItemFilter("all");
     setPaymentFilter("all");
     setFromDate("");
     setToDate("");
   }, [activeView]);
+  useEffect(() => {
+    if (section === "sale" && sessionStorage.getItem("open-sales-entry") === String(item.id)) {
+      sessionStorage.removeItem("open-sales-entry");
+      setSalesOpen(true);
+    }
+  }, [item.id, section]);
   const resetForm = () => {
     setPartyName("");
     setName("");
@@ -714,6 +718,24 @@ export function InventoryDetail({
       return groups;
     }, new Map<string, InventoryTransaction[]>()).entries())
     : [];
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeView, search, itemFilter, paymentFilter, fromDate, toDate, filtered.length, saleGroups.length]);
+
+  const totalItems = activeView === "sale" ? saleGroups.length : filtered.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+
+  const paginatedSaleGroups = activeView === "sale"
+    ? saleGroups.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : [];
+
+  const paginatedFiltered = activeView === "purchase"
+    ? filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : [];
   const itemSuggestions = Array.from(
     new Set(displayedTransactions.map((tx) => tx.name.trim()).filter(Boolean)),
   ).sort((a, b) => a.localeCompare(b));
@@ -755,42 +777,15 @@ export function InventoryDetail({
           </button>
           <button
             onClick={() => {
-              if (activeView === "sale") setSalesOpen(true);
-              else {
-                resetForm();
-                setError("");
-                setOpen(true);
-              }
+              resetForm();
+              setError("");
+              setOpen(true);
             }}
             className="flex min-h-11 items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white bg-primary transition-all hover:opacity-90 active:scale-95"
           >
-            <Plus size={16} /> Add {activeView === "sale" ? "Sale" : "Purchase"}
+            <Plus size={16} /> Add Purchase
           </button>
         </div>
-      </div>
-      <div
-        className="inline-flex w-full border-b border-slate-200"
-        role="tablist"
-        aria-label="Inventory transaction type"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeView === "purchase"}
-          onClick={() => setActiveView("purchase")}
-          className={`min-h-11 border-b-2 px-6 text-sm font-bold transition-colors ${activeView === "purchase" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-900"}`}
-        >
-          Purchase
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeView === "sale"}
-          onClick={() => setActiveView("sale")}
-          className={`min-h-11 border-b-2 px-6 text-sm font-bold transition-colors ${activeView === "sale" ? "border-primary text-primary" : "border-transparent text-slate-500 hover:text-slate-900"}`}
-        >
-          Sales
-        </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border border-border p-4">
@@ -867,7 +862,7 @@ export function InventoryDetail({
       <section className="overflow-hidden rounded-xl border border-border bg-white">
         <div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-6">
           <h3 className="min-w-0 flex-1 truncate text-base font-bold text-slate-900 sm:text-lg">
-            {activeView === "purchase" ? "Purchases" : "Sales"} — {item.name}
+            Purchases — {item.name}
           </h3>
           <button
             type="button"
@@ -955,7 +950,8 @@ export function InventoryDetail({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {activeView === "sale" ? saleGroups.map(([batchId, group], index) => {
+                {activeView === "sale" ? paginatedSaleGroups.map(([batchId, group], localIndex) => {
+                  const index = (currentPage - 1) * pageSize + localIndex;
                   const first = group[0];
                   const expanded = expandedSaleBatches.has(batchId);
                   const amount = group.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
@@ -993,7 +989,8 @@ export function InventoryDetail({
                       })}
                     </Fragment>
                   );
-                }) : filtered.map((tx, index) => {
+                }) : paginatedFiltered.map((tx, localIndex) => {
+                  const index = (currentPage - 1) * pageSize + localIndex;
                   const paid = Number(
                     tx.paidAmount ??
                       (tx.paymentStatus === "paid" ? tx.amount : 0),
@@ -1071,6 +1068,13 @@ export function InventoryDetail({
             </table>
           </div>
         )}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          totalItems={totalItems}
+          pageSize={pageSize}
+        />
       </section>
       <SalesEntryDialog
         open={salesOpen}
@@ -1377,4 +1381,53 @@ export function InventoryDetail({
       </Dialog>
     </div>
   );
+}
+
+export function SalesOverview({
+  inventoryItems,
+  onOpenCompany,
+  onAddSale,
+}: {
+  inventoryItems: Item[];
+  onOpenCompany: (id: number) => void;
+  onAddSale: (id: number) => void;
+}) {
+  const [companyPickerOpen, setCompanyPickerOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const sales = inventoryItems.flatMap((company) =>
+    (company.transactions || [])
+      .filter((tx) => tx.transactionType === "sale")
+      .map((tx) => ({ ...tx, companyId: company.id, companyName: company.name })),
+  ).sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const total = sales.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const received = sales.reduce((sum, tx) => sum + Number(tx.paidAmount ?? (tx.paymentStatus === "paid" ? tx.amount : 0)), 0);
+  const pending = Math.max(0, total - received);
+  const paginatedSales = sales.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return <div className="min-h-full space-y-6 bg-slate-50 p-4 sm:p-6">
+    <div className="flex flex-col gap-3 border-b border-slate-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-700">All inventory companies</p><h1 className="mt-1 text-2xl font-bold text-slate-950">Sales</h1><p className="mt-1 text-sm text-slate-500">One shared view of every inventory sale and collection.</p></div>
+      <div className="flex items-center gap-3"><div className="text-sm font-semibold text-slate-500">{sales.length} sale item{sales.length === 1 ? "" : "s"}</div><button type="button" onClick={() => setCompanyPickerOpen(true)} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white hover:opacity-90"><Plus size={16} /> Add sale</button></div>
+    </div>
+    <div className="grid gap-4 sm:grid-cols-3">
+      <div className="border border-blue-100 bg-blue-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-blue-700">Total sales</p><p className="mt-2 font-mono text-xl font-bold text-blue-950">₹{total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div>
+      <div className="border border-emerald-100 bg-emerald-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Received</p><p className="mt-2 font-mono text-xl font-bold text-emerald-800">₹{received.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div>
+      <div className="border border-amber-200 bg-amber-50 p-4"><p className="text-xs font-bold uppercase tracking-wide text-amber-800">Pending</p><p className="mt-2 font-mono text-xl font-bold text-amber-800">₹{pending.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p></div>
+    </div>
+    <section className="overflow-hidden border border-slate-200 bg-white">
+      <div className="border-b border-slate-200 px-5 py-4"><h2 className="font-bold text-slate-900">All sales entries</h2></div>
+      {sales.length === 0 ? <div className="p-12 text-center text-sm text-slate-500">No sales entries yet.</div> : <div className="overflow-x-auto"><table className="min-w-[850px] w-full text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-5 py-3">Date</th><th className="px-5 py-3">Inventory company</th><th className="px-5 py-3">Customer</th><th className="px-5 py-3">Item</th><th className="px-5 py-3 text-right">Amount</th><th className="px-5 py-3 text-right">Received</th><th className="px-5 py-3 text-right">Pending</th></tr></thead><tbody className="divide-y divide-slate-100">{paginatedSales.map(tx => { const paid = Number(tx.paidAmount ?? (tx.paymentStatus === "paid" ? tx.amount : 0)); const due = Math.max(0, Number(tx.amount) - paid); return <tr key={tx.id} className="hover:bg-slate-50"><td className="whitespace-nowrap px-5 py-4 text-slate-500">{new Date(tx.createdAt).toLocaleDateString()}</td><td className="px-5 py-4"><button onClick={() => onOpenCompany(tx.companyId)} className="font-semibold text-blue-700 hover:underline">{tx.companyName}</button></td><td className="px-5 py-4 font-medium text-slate-800">{tx.partyName || "Unassigned"}</td><td className="px-5 py-4 text-slate-700">{tx.name}</td><td className="px-5 py-4 text-right font-mono">₹{Number(tx.amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td className="px-5 py-4 text-right font-mono text-emerald-700">₹{paid.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td className="px-5 py-4 text-right font-mono text-amber-700">₹{due.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>; })}</tbody></table></div>}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={Math.ceil(sales.length / pageSize)}
+        onPageChange={setCurrentPage}
+        totalItems={sales.length}
+        pageSize={pageSize}
+      />
+    </section>
+    <Dialog open={companyPickerOpen} onOpenChange={setCompanyPickerOpen}>
+      <DialogContent className="sm:max-w-md"><DialogHeader><DialogTitle>Choose inventory company</DialogTitle><DialogDescription>Select the inventory company for this new sale.</DialogDescription></DialogHeader><div className="space-y-2">{inventoryItems.length === 0 ? <p className="py-5 text-center text-sm text-slate-500">Create an inventory company first.</p> : inventoryItems.map(company => <button key={company.id} type="button" onClick={() => { setCompanyPickerOpen(false); onAddSale(company.id); }} className="flex min-h-12 w-full items-center justify-between border border-slate-200 px-4 text-left text-sm font-semibold text-slate-800 hover:border-emerald-300 hover:bg-emerald-50"><span>{company.name}</span><ChevronRight size={16} className="text-slate-400" /></button>)}</div></DialogContent>
+    </Dialog>
+  </div>;
 }

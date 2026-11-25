@@ -32,13 +32,16 @@ const syncAccountMovement = async inventoryTransaction => {
   }
 
   const account = await Account.findByPk(accountId);
-  if (!account || account.type !== 'company') throw new Error('Select a valid company account.');
+  if (!account || account.type !== 'company') {
+    if (existing) await existing.destroy();
+    return;
+  }
   const isSale = inventoryTransaction.transactionType === 'sale';
   const values = {
     accountId: account.id,
     companyName: account.name,
     date: formatIndiaDate(inventoryTransaction.createdAt || Date.now()),
-    description: `Inventory ${isSale ? 'sale' : 'purchase'}: ${inventoryTransaction.name}`,
+    description: isSale ? `Sale received: ${inventoryTransaction.name}` : `Inventory purchase: ${inventoryTransaction.name}`,
     type: isSale ? 'credit' : 'debit',
     amount: paidAmount,
     reference,
@@ -58,8 +61,6 @@ router.get('/', async (_req, res) => {
         where: { inventoryItemId: item.id },
         order: [['createdAt', 'DESC'], ['id', 'DESC']],
       });
-      // Reconcile older inventory rows too, including paid sales created before
-      // linked company movements were made reliable.
       await Promise.all(transactions.map(syncAccountMovement));
       return { ...item.toJSON(), transactions };
     }));
@@ -112,7 +113,7 @@ router.post('/:id/transactions', async (req, res) => {
       typeof name !== 'string' || !name.trim() || name.trim().length > 255 ||
       typeof quantity !== 'string' || !quantity.trim() || quantity.trim().length > 255 ||
       !['kg', 'box'].includes(unit) ||
-      !['purchase', 'sale'].includes(transactionType) ||
+      transactionType !== 'purchase' ||
       !Number.isFinite(Number(amount)) || Number(amount) < 0 || Number(amount) >= 1000000000000 ||
       (unitPrice !== null && (!Number.isFinite(Number(unitPrice)) || Number(unitPrice) < 0)) ||
       !Number.isFinite(Number(paidAmount)) || Number(paidAmount) < 0 || Number(paidAmount) > Number(amount) ||

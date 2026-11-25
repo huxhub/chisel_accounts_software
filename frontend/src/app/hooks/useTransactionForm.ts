@@ -43,7 +43,7 @@ export function useTransactionForm(
   const [txToDelete, setTxToDelete] = useState<{ accountId: string; txId: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const activeAccount = accounts.find(a => a.id === activeTab);
+  const activeAccount = accounts.find(a => String(a.id) === String(activeTab));
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

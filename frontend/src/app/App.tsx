@@ -21,6 +21,7 @@ import { ProgramModal } from "./components/modals/ProgramModal";
 import { DeleteAccountModal, DeleteTxModal, CompleteReminderModal } from "./components/modals/DeleteConfirmModals";
 import { SettingsModal } from "./components/modals/SettingsModal";
 import { AddInventoryDialog, InventoryDetail, inventoryRequest, type Item } from "./components/InventoryPage";
+import { SalesPage } from "./components/SalesPage";
 import { LedgersPage } from "./components/LedgersPage";
 import { VoucherModal } from "./components/modals/VoucherModal";
 
@@ -96,7 +97,15 @@ export default function App() {
     sessionStorage.setItem("golden-catch-active-page", activeTab);
     document.querySelector("main")?.scrollTo({ top: 0, behavior: "auto" });
   }, [activeTab]);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const inventoryRouteId = typeof activeTab === "string" && activeTab.startsWith("inventory-")
+    ? activeTab.slice("inventory-".length)
+    : null;
+  const activeInventoryItem = inventoryRouteId
+    ? inventoryItems.find(item => String(item.id) === inventoryRouteId)
+    : undefined;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  );
   const [showReport, setShowReport] = useState<boolean>(false);
   const [showPrograms, setShowPrograms] = useState<boolean>(false);
   const [showVoucherModal, setShowVoucherModal] = useState<boolean>(false);
@@ -174,8 +183,18 @@ export default function App() {
 
         <Sidebar
           inventoryItems={inventoryItems}
-          onAddInventory={() => { setInventoryOpen(true); setMobileMenuOpen(false); }}
-          onSelectInventory={id => { setActiveTab(`inventory-${id}`); setMobileMenuOpen(false); }}
+          onAddInventory={() => {
+            setInventoryOpen(true);
+            if (typeof window !== "undefined" && window.innerWidth < 768) setMobileMenuOpen(false);
+          }}
+          onSelectInventory={id => {
+            setActiveTab(`inventory-${id}`);
+            if (typeof window !== "undefined" && window.innerWidth < 768) setMobileMenuOpen(false);
+          }}
+          onSelectSales={() => {
+            setActiveTab("sales");
+            if (typeof window !== "undefined" && window.innerWidth < 768) setMobileMenuOpen(false);
+          }}
           settings={settings}
           accounts={accounts}
           activeTab={activeTab}
@@ -188,7 +207,7 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-w-0">
           {loading ? (
             activeTab === "dashboard" ? <DashboardSkeleton /> : <AccountDetailsSkeleton />
           ) : activeTab === "dashboard" ? (
@@ -197,11 +216,13 @@ export default function App() {
             <HistoryPage accounts={accounts} programs={programs} onViewDoc={doc => setViewDoc(doc)} />
           ) : activeTab === "reminders" ? (
             <RemindersPage accounts={accounts} onNavigate={setActiveTab} onAddTransaction={handleAddTx} onDeleteTransaction={txForm.deleteTransaction} onCompleteReminder={promptCompleteReminder} />
+          ) : activeTab === "sales" ? (
+              <SalesPage accounts={accounts} onSalesChanged={fetchAccounts} />
           ) : typeof activeTab === "string" && activeTab.startsWith("inventory-") ? (
             inventoryLoading ? (
               <AccountDetailsSkeleton />
-            ) : inventoryItems.find(item => `inventory-${item.id}` === activeTab) ? (
-              <InventoryDetail item={inventoryItems.find(item => `inventory-${item.id}` === activeTab)!} accounts={accounts.filter(account => account.type === "company")} onTransactionsChanged={refreshInventory} onDeleteCompany={() => deleteInventoryCompany(inventoryItems.find(item => `inventory-${item.id}` === activeTab)!.id)} />
+            ) : activeInventoryItem ? (
+              <InventoryDetail item={activeInventoryItem} accounts={accounts.filter(account => account.type === "company")} onTransactionsChanged={refreshInventory} onDeleteCompany={() => deleteInventoryCompany(activeInventoryItem.id)} />
             ) : (
               <div className="flex min-h-full items-center justify-center bg-slate-50 p-6">
                 <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center">

@@ -214,12 +214,13 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     note?: string;
     programId?: number | null;
     document?: any;
+    paidNow?: number;
   }) => {
     try {
       const voucher = await ledgerService.createVoucher(data);
       toast.success(`${data.type.toUpperCase()} voucher created`);
       fetchLedgers();
-      if (data.type === 'payment' || data.type === 'receipt') {
+      if (data.type === 'payment' || data.type === 'receipt' || Boolean(data.paidNow && data.paidNow > 0)) {
         fetchAccounts();
       }
       return voucher;

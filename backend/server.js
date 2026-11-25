@@ -76,6 +76,7 @@ import vendorRoutes from './routes/vendorRoutes.js';
 import ledgerRoutes from './routes/ledgerRoutes.js';
 import voucherRoutes from './routes/voucherRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
+import salesRoutes from './routes/salesRoutes.js';
 import { protect } from './middleware/authMiddleware.js';
 
 // Routes
@@ -87,6 +88,7 @@ app.use('/api/vendors', protect, vendorRoutes);
 app.use('/api/ledgers', protect, ledgerRoutes);
 app.use('/api/vouchers', protect, voucherRoutes);
 app.use('/api/inventory', protect, inventoryRoutes);
+app.use('/api/sales', protect, salesRoutes);
 
 
 // Basic Route

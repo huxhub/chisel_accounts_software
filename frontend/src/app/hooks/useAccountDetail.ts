@@ -12,7 +12,7 @@ export function useAccountDetail(
   editAccountNameFn: (id: string, name: string) => Promise<any>,
   setActiveTab: (tab: string) => void,
 ) {
-  const activeAccount = accounts.find(a => a.id === activeTab);
+  const activeAccount = accounts.find(a => String(a.id) === String(activeTab));
 
   // ── Add company form ──
   const [showAddCompany, setShowAddCompany] = useState(false);

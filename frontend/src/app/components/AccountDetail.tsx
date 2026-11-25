@@ -85,7 +85,7 @@ export function AccountDetail({
 
   const visibleReminders = activeAccountReminders.filter((rem: any) => !dismissedReminderIds.has(rem.id));
   const inventoryPurchases = activeAccount.transactions.filter(tx => tx.reference?.startsWith("INVENTORY-") && tx.type === "debit");
-  const inventorySales = activeAccount.transactions.filter(tx => tx.reference?.startsWith("INVENTORY-") && tx.type === "credit");
+  const inventorySales = activeAccount.transactions.filter(tx => (tx.reference?.startsWith("INVENTORY-") || tx.reference?.startsWith("SALES-")) && tx.type === "credit");
   const inventoryPurchaseTotal = inventoryPurchases.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
   const inventorySalesTotal = inventorySales.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
 

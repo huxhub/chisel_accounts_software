@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, Trash2, ShoppingCart, Package, Search, TrendingDown, TrendingUp, ChevronDown, Minus, Layers } from "lucide-react";
 import type { Vendor, VendorEntry } from "../types";
 import { fmt } from "../types";
 import { VendorEntryModal } from "./modals/VendorModal";
+import { Pagination } from "./ui/pagination";
 
 export function VendorsPage({
   vendors,
@@ -18,6 +19,9 @@ export function VendorsPage({
   const [showEntryModal, setShowEntryModal] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [purchasePage, setPurchasePage] = useState(1);
+  const [salePage, setSalePage] = useState(1);
+  const pageSize = 10;
 
   const isAllVendors = selectedVendorId === "all" || selectedVendorId === "";
   const selected = isAllVendors ? null : (vendors.find(v => v.id === selectedVendorId) ?? null);
@@ -59,6 +63,11 @@ export function VendorsPage({
   const viewPurchased = useMemo(() => purchases.reduce((s, e) => s + e.amount, 0), [purchases]);
   const viewSold = useMemo(() => sales.reduce((s, e) => s + e.amount, 0), [sales]);
   const viewNet = viewPurchased - viewSold;
+
+  useEffect(() => {
+    setPurchasePage(1);
+    setSalePage(1);
+  }, [selectedVendorId, allEntriesWithVendor.length]);
 
   // Filter vendors by search in dropdown
   const filteredVendors = vendors.filter(v => v.name.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -109,6 +118,9 @@ export function VendorsPage({
     const colorBorder = isPurchase ? "border-red-200" : "border-green-200";
     const IconComp = isPurchase ? TrendingDown : TrendingUp;
     const totalColor = isPurchase ? "text-red-600" : "text-green-600";
+    const curPage = isPurchase ? purchasePage : salePage;
+    const setCurPage = isPurchase ? setPurchasePage : setSalePage;
+    const paginatedEntries = entries.slice((curPage - 1) * pageSize, curPage * pageSize);
 
     return (
       <div className="flex flex-col h-full">
@@ -153,7 +165,7 @@ export function VendorsPage({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {entries.map(e => renderEntryRow(e, type))}
+                {paginatedEntries.map(e => renderEntryRow(e, type))}
               </tbody>
               <tfoot>
                 <tr className={`${colorBg} border-t ${colorBorder}`}>
@@ -166,6 +178,15 @@ export function VendorsPage({
               </tfoot>
             </table>
           </div>
+        )}
+        {entries.length > pageSize && (
+          <Pagination
+            currentPage={curPage}
+            totalPages={Math.ceil(entries.length / pageSize)}
+            onPageChange={setCurPage}
+            totalItems={entries.length}
+            pageSize={pageSize}
+          />
         )}
       </div>
     );
