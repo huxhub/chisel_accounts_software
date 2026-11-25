@@ -515,12 +515,6 @@ export function InventoryDetail({
     setFromDate("");
     setToDate("");
   }, [activeView]);
-  useEffect(() => {
-    if (section === "sale" && sessionStorage.getItem("open-sales-entry") === String(item.id)) {
-      sessionStorage.removeItem("open-sales-entry");
-      setSalesOpen(true);
-    }
-  }, [item.id, section]);
   const resetForm = () => {
     setPartyName("");
     setName("");
