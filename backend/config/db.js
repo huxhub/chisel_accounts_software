@@ -141,6 +141,56 @@ const connectDB = async () => {
       if (inventoryAmountColumns.length === 0) {
         await sequelize.query('ALTER TABLE `InventoryTransactions` ADD COLUMN `amount` DECIMAL(14,2) NOT NULL DEFAULT 0');
       }
+      const [inventoryPartyNameColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('InventoryTransactions') AND LOWER(COLUMN_NAME) = LOWER('partyName')`,
+        { replacements: [dbName] }
+      );
+      if (inventoryPartyNameColumns.length === 0) {
+        await sequelize.query("ALTER TABLE `InventoryTransactions` ADD COLUMN `partyName` VARCHAR(255) NOT NULL DEFAULT '' AFTER `inventoryItemId`");
+      }
+      const [inventoryTypeColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('InventoryTransactions') AND LOWER(COLUMN_NAME) = LOWER('transactionType')`,
+        { replacements: [dbName] }
+      );
+      if (inventoryTypeColumns.length === 0) {
+        await sequelize.query("ALTER TABLE `InventoryTransactions` ADD COLUMN `transactionType` ENUM('purchase','sale') NOT NULL DEFAULT 'purchase' AFTER `partyName`");
+      }
+      const [inventorySaleBatchColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('InventoryTransactions') AND LOWER(COLUMN_NAME) = LOWER('saleBatchId')`,
+        { replacements: [dbName] }
+      );
+      if (inventorySaleBatchColumns.length === 0) {
+        await sequelize.query('ALTER TABLE `InventoryTransactions` ADD COLUMN `saleBatchId` VARCHAR(36) NULL AFTER `transactionType`');
+      }
+      const [inventoryUnitPriceColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('InventoryTransactions') AND LOWER(COLUMN_NAME) = LOWER('unitPrice')`,
+        { replacements: [dbName] }
+      );
+      if (inventoryUnitPriceColumns.length === 0) {
+        await sequelize.query('ALTER TABLE `InventoryTransactions` ADD COLUMN `unitPrice` DECIMAL(14,2) NULL AFTER `amount`');
+      }
+      const [inventoryPaidColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('InventoryTransactions') AND LOWER(COLUMN_NAME) = LOWER('paidAmount')`,
+        { replacements: [dbName] }
+      );
+      if (inventoryPaidColumns.length === 0) {
+        await sequelize.query('ALTER TABLE `InventoryTransactions` ADD COLUMN `paidAmount` DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER `amount`');
+        await sequelize.query("UPDATE `InventoryTransactions` SET `paidAmount` = `amount` WHERE `paymentStatus` = 'paid'");
+      }
+      const [inventoryLinkedAccountColumns] = await sequelize.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE LOWER(TABLE_SCHEMA) = LOWER(?) AND LOWER(TABLE_NAME) = LOWER('InventoryTransactions') AND LOWER(COLUMN_NAME) = LOWER('linkedAccountId')`,
+        { replacements: [dbName] }
+      );
+      if (inventoryLinkedAccountColumns.length === 0) {
+        await sequelize.query('ALTER TABLE `InventoryTransactions` ADD COLUMN `linkedAccountId` INT NULL AFTER `paidAmount`');
+      }
+      await sequelize.query("ALTER TABLE `InventoryTransactions` MODIFY COLUMN `paymentStatus` ENUM('paid','not_paid','partial') NOT NULL DEFAULT 'not_paid'");
       await sequelize.query('ALTER TABLE `InventoryTransactions` MODIFY COLUMN `quantity` VARCHAR(255) NOT NULL');
     } catch {
       // InventoryTransactions table is created by sync on first boot

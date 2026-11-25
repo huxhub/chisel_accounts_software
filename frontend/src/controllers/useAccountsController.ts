@@ -261,5 +261,6 @@ export const useAccountsController = (isAuthenticated: boolean) => {
     addVoucher,
     deleteVoucher,
     fetchLedgers,
+    fetchAccounts,
   };
 };

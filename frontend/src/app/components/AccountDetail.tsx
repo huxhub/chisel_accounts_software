@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2, Edit3, Check, X, Bell } from "lucide-react";
 import type { Account, AttachedDoc, Program } from "../types";
-import { accountTypeIcon, accountTypeLabel, fmt, fmtSign, calcBalance, calcTotalCredit, calcTotalDebit } from "../types";
+import { accountTypeIcon, accountTypeLabel, fmt, fmtSign, calcBalance, calcTotalCredit, calcTotalDebit, formatLocalDate } from "../types";
 import { TransactionsTable } from "./TransactionsTable";
 import { ExchangeTransactionsTable } from "./ExchangeTransactionsTable";
 
@@ -84,6 +84,10 @@ export function AccountDetail({
   };
 
   const visibleReminders = activeAccountReminders.filter((rem: any) => !dismissedReminderIds.has(rem.id));
+  const inventoryPurchases = activeAccount.transactions.filter(tx => tx.reference?.startsWith("INVENTORY-") && tx.type === "debit");
+  const inventorySales = activeAccount.transactions.filter(tx => tx.reference?.startsWith("INVENTORY-") && tx.type === "credit");
+  const inventoryPurchaseTotal = inventoryPurchases.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+  const inventorySalesTotal = inventorySales.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
 
   return (
     <div className="p-6 space-y-5 w-full">
@@ -141,7 +145,7 @@ export function AccountDetail({
       {visibleReminders.length > 0 && (
         <div className="space-y-3">
           {visibleReminders.map((rem: any) => {
-            const todayStr = new Date().toISOString().split("T")[0];
+            const todayStr = formatLocalDate();
             const isOverdue = rem.dueDate < todayStr;
             const isDueToday = rem.dueDate === todayStr;
             const diffTime = new Date(rem.dueDate).getTime() - new Date(todayStr).getTime();
@@ -216,6 +220,23 @@ export function AccountDetail({
           <div className="text-xs mt-1" style={{ color: activeAccount.color, opacity: 0.7 }}>{calcBalance(activeAccount) >= activeAccount.openingBalance ? "↑ Increase" : "↓ Decrease"}</div>
         </div>
       </div>
+
+      {activeAccount.type === "company" && (inventoryPurchases.length > 0 || inventorySales.length > 0) && (
+        <section className="border-y border-slate-200 bg-white px-1 py-4" aria-label="Inventory purchase and sales summary">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="bg-rose-50/60 rounded-xl p-4 border border-rose-100">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Inventory purchases paid</div>
+              <div className="mt-1 font-mono text-lg font-bold text-rose-700">-₹{fmt(inventoryPurchaseTotal)}</div>
+              <div className="mt-1 text-xs text-slate-500">{inventoryPurchases.length} linked purchase {inventoryPurchases.length === 1 ? "entry" : "entries"}</div>
+            </div>
+            <div className="bg-emerald-50/60 rounded-xl p-4 border border-emerald-100">
+              <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Inventory sales received</div>
+              <div className="mt-1 font-mono text-lg font-bold text-emerald-700">+₹{fmt(inventorySalesTotal)}</div>
+              <div className="mt-1 text-xs text-slate-500">{inventorySales.length} linked sales {inventorySales.length === 1 ? "entry" : "entries"}</div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Transactions Table */}
       <TransactionsTable activeAccount={activeAccount} normalTransactions={normalTransactions} txRunningBalances={txRunningBalances} onViewDoc={onViewDoc} onDeleteTransaction={onDeleteTransaction} onEditTransaction={onEditTransaction} programs={programs} />

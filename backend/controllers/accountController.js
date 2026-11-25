@@ -322,17 +322,38 @@ export const getHistory = async (req, res) => {
       accountBgColor: tx.Account?.bgColor || '#e8edf5',
     }));
 
+    const periodStartDate = month ? `${month}-01` : startDate;
+    let priorMap = {};
+    if (periodStartDate) {
+      const priorWhere = {
+        date: { [Op.lt]: periodStartDate },
+        isReminder: { [Op.ne]: true },
+      };
+      if (accountId) priorWhere.accountId = accountId;
+      if (programId) priorWhere.programId = programId;
+      const priorTxs = await Transaction.findAll({
+        where: priorWhere,
+        attributes: ['accountId', 'type', 'amount'],
+      });
+      for (const p of priorTxs) {
+        if (!priorMap[p.accountId]) priorMap[p.accountId] = 0;
+        priorMap[p.accountId] += (p.type === 'credit' ? p.amount : -p.amount);
+      }
+    }
+
     const accountMap = {};
-    const allAccounts = await Account.findAll();
+    const allAccounts = await Account.findAll(accountId ? { where: { id: accountId } } : undefined);
 
     for (const acc of allAccounts) {
+      const priorNet = priorMap[acc.id] || 0;
+      const periodOpeningBalance = (programId ? 0 : acc.openingBalance) + priorNet;
       accountMap[acc.id] = {
         accountId: acc.id,
         name: acc.name,
         type: acc.type,
         color: acc.color,
         bgColor: acc.bgColor,
-        openingBalance: acc.openingBalance,
+        openingBalance: periodOpeningBalance,
         credits: 0,
         debits: 0,
         balance: 0,
@@ -360,7 +381,7 @@ export const getHistory = async (req, res) => {
       entry.balance = entry.openingBalance + entry.credits - entry.debits;
     }
 
-    const totalOpeningBalance = allAccounts.reduce((s, a) => s + a.openingBalance, 0);
+    const totalOpeningBalance = Object.values(accountMap).reduce((s, a) => s + a.openingBalance, 0);
 
     res.json({
       transactions: formattedTxs,

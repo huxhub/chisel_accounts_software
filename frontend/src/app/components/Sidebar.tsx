@@ -164,7 +164,10 @@ export function Sidebar({
           {inventoryExpanded && <div className="divide-y divide-slate-100">
             {inventoryItems.map(item => {
               const txs = item.transactions || [];
-              const pending = txs.filter(tx => tx.paymentStatus === "not_paid").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+              const pending = txs.reduce(
+                (sum, tx) => sum + Math.max(0, Number(tx.amount || 0) - Number(tx.paidAmount ?? (tx.paymentStatus === "paid" ? tx.amount : 0))),
+                0,
+              );
               const total = txs.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
               return (
                 <button key={item.id} onClick={() => onSelectInventory(item.id)} className={`w-full text-left px-4 py-3 flex items-center justify-between gap-3 transition-all ${activeTab === `inventory-${item.id}` ? "bg-slate-50" : "hover:bg-slate-50/80"}`}>

@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { Bell, Trash2, Check, X, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Account } from "../types";
-import { fmt } from "../types";
+import { fmt, formatLocalDate } from "../types";
 
 export function RemindersPage({
   accounts,
@@ -31,7 +31,7 @@ export function RemindersPage({
     if (!selectedAccountId) { toast.warning("Please select a company/account first!"); return; }
     if (!reminderNote || !reminderDate) { toast.warning("Please fill in both note and date."); return; }
     const parsedAmount = parseFloat(reminderAmount) || 0;
-    const tx = { date: new Date().toISOString().split("T")[0], description: reminderNote, type: "debit" as const, amount: parsedAmount, dueDate: reminderDate, isReminder: true };
+    const tx = { date: formatLocalDate(), description: reminderNote, type: "debit" as const, amount: parsedAmount, dueDate: reminderDate, isReminder: true };
     onAddTransaction(selectedAccountId, tx);
     setReminderNote(""); setReminderDate(""); setReminderAmount(""); setShowReminderModal(false);
   };
@@ -54,7 +54,7 @@ export function RemindersPage({
   const activeReminders = useMemo(() => allReminders.filter(r => !r.isCompleted), [allReminders]);
   const completedReminders = useMemo(() => allReminders.filter(r => Boolean(r.isCompleted)), [allReminders]);
   const currentList = tab === "active" ? activeReminders : completedReminders;
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatLocalDate();
 
   return (
     <div className="p-6 space-y-6 w-full">

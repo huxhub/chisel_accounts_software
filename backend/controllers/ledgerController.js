@@ -4,6 +4,12 @@ import Account from '../models/Account.js';
 import Transaction from '../models/Transaction.js';
 import Program from '../models/Program.js';
 
+const signedOpeningBalance = (ledger) => {
+  const opening = ledger.openingBalance || 0;
+  return (ledger.type === 'vendor' && ledger.openingType === 'debit') ||
+    (ledger.type === 'customer' && ledger.openingType === 'credit') ? -opening : opening;
+};
+
 // GET /api/ledgers
 export const getLedgers = async (req, res) => {
   try {
@@ -40,11 +46,12 @@ export const getLedgers = async (req, res) => {
         if (v.type === 'receipt') totalReceived += v.amount;
       });
 
-      const openingBal = l.openingBalance || 0;
+      const openingBal = signedOpeningBalance(l);
+
       const balanceDue =
         l.type === 'vendor'
-          ? openingBal + totalPurchased - totalPaid
-          : openingBal + totalSold - totalReceived;
+          ? openingBal + totalPurchased + totalReceived - totalPaid - totalSold
+          : openingBal + totalSold + totalPaid - totalReceived - totalPurchased;
 
       return {
         ...plain,
@@ -91,7 +98,7 @@ export const createLedger = async (req, res) => {
       totalPaid: 0,
       totalSold: 0,
       totalReceived: 0,
-      balanceDue: ledger.openingBalance,
+      balanceDue: signedOpeningBalance(ledger),
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -141,7 +148,7 @@ export const getLedgerStatement = async (req, res) => {
 
     const vouchers = (ledger.Vouchers || []).sort((a, b) => a.date.localeCompare(b.date));
 
-    let runningBalance = ledger.openingBalance || 0;
+    let runningBalance = signedOpeningBalance(ledger);
     let totalDr = 0;
     let totalCr = 0;
 
@@ -209,7 +216,7 @@ export const getLedgerStatement = async (req, res) => {
         openingType: ledger.openingType,
       },
       summary: {
-        openingBalance: ledger.openingBalance,
+        openingBalance: signedOpeningBalance(ledger),
         totalDebit: totalDr,
         totalCredit: totalCr,
         closingBalance: runningBalance,

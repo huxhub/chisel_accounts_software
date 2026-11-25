@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FileDown, X, Download, Filter } from "lucide-react";
 import type { Account, Program } from "../../types";
+import { formatLocalDate } from "../../types";
 import { generateMonthlyPDF } from "../../utils/generateMonthlyPDF";
 
 export function ReportModal({
@@ -15,8 +16,8 @@ export function ReportModal({
   setShowReport: (v: boolean) => void;
 }) {
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
-  const firstDayStr = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const todayStr = formatLocalDate(now);
+  const firstDayStr = formatLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const [fromDate, setFromDate] = useState(firstDayStr);
   const [toDate, setToDate] = useState(todayStr);

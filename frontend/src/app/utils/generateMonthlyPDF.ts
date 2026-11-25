@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { Account, Transaction } from "../types";
+import { formatLocalDate } from "../types";
 
 export function generateMonthlyPDF(
   accounts: Account[],
@@ -46,6 +47,7 @@ export function generateMonthlyPDF(
 
   const filterTx = (txs: Transaction[]) =>
     txs.filter(tx => {
+      if (tx.isReminder) return false;
       if (programFilter && Number(tx.programId) !== Number(programFilter.id)) return false;
       if (!tx.date) return false;
       if (fromDate && toDate) {
@@ -115,6 +117,7 @@ export function generateMonthlyPDF(
 
   accounts.forEach(acc => {
     const txsBeforeMonth = acc.transactions.filter(tx => {
+      if (tx.isReminder) return false;
       if (programFilter && Number(tx.programId) !== Number(programFilter.id)) return false;
       return isBeforePeriod(tx.date);
     });
@@ -127,7 +130,7 @@ export function generateMonthlyPDF(
     const debit = txs.filter(t => t.type === "debit").reduce((s, t) => s + t.amount, 0);
     const closing = monthlyOpeningBalance + credit - debit;
 
-    const accDate = acc.createdAt ? (typeof acc.createdAt === "string" ? acc.createdAt.split("T")[0] : new Date(acc.createdAt).toISOString().split("T")[0]) : new Date().toISOString().split("T")[0];
+    const accDate = acc.createdAt ? formatLocalDate(new Date(acc.createdAt)) : formatLocalDate();
     const isExisted = isOnOrBeforePeriodEnd(accDate);
 
     if ((isExisted && (monthlyOpeningBalance !== 0 || credit > 0 || debit > 0)) || txs.length > 0) {
@@ -186,6 +189,7 @@ export function generateMonthlyPDF(
   // ── Pages 2+: Individual Account Pages ──
   accounts.forEach(acc => {
     const txsBeforeMonth = acc.transactions.filter(tx => {
+      if (tx.isReminder) return false;
       if (programFilter && Number(tx.programId) !== Number(programFilter.id)) return false;
       return isBeforePeriod(tx.date);
     });
@@ -303,6 +307,7 @@ function buildTransfersSection(
 
   accounts.forEach(a => {
     a.transactions.forEach((tx: any) => {
+      if (tx.isReminder) return;
       if (programFilter && Number(tx.programId) !== Number(programFilter.id)) return;
       if (!tx.date) return;
       let isThisPeriod = false;
@@ -322,8 +327,11 @@ function buildTransfersSection(
         entry = { date: tx.date, amount: tx.amount, reference: tx.reference, dueDate: tx.dueDate, exchangeType: tx.exchangeType || "loan", fromCompany: "", toCompany: "" };
         map.set(tx.reference, entry);
       }
-      if (tx.type === "debit") entry.fromCompany = a.name;
-      else if (tx.type === "credit") entry.toCompany = a.name;
+      if (tx.type === "debit") {
+        if (!entry.fromCompany || a.type === "company") entry.fromCompany = a.name;
+      } else if (tx.type === "credit") {
+        if (!entry.toCompany || a.type === "company") entry.toCompany = a.name;
+      }
     });
   });
 

@@ -201,4 +201,11 @@ export function accountTypeLabel(type: Account["type"]): string {
   return "Company Account";
 }
 
-export const today = new Date().toISOString().split("T")[0];
+export function formatLocalDate(d: Date = new Date()): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export const today = formatLocalDate();

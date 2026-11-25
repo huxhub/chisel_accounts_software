@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, Receipt, ArrowRightLeft, CreditCard, ShoppingBag, PlusCircle } from "lucide-react";
 import type { Account, Program, Ledger, VoucherType } from "../../types";
+import { formatLocalDate } from "../../types";
 
 export function VoucherModal({
   show,
@@ -32,7 +33,7 @@ export function VoucherModal({
   const [type, setType] = useState<VoucherType>("purchase");
   const [ledgerId, setLedgerId] = useState<string>("");
   const [accountId, setAccountId] = useState<string>("");
-  const [date, setDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState<string>(formatLocalDate());
   const [itemName, setItemName] = useState<string>("");
   const [amount, setAmount] = useState<string>("");
   const [note, setNote] = useState<string>("");

@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import type { Account } from "../types";
-import { CHART_COLORS } from "../types";
+import { CHART_COLORS, formatLocalDate } from "../types";
 
 export function useAccountDetail(
   accounts: Account[],
@@ -58,7 +58,7 @@ export function useAccountDetail(
     todayObj.setHours(0, 0, 0, 0);
     const targetDateObj = new Date(todayObj);
     targetDateObj.setDate(targetDateObj.getDate() + 5);
-    const targetDateStr = targetDateObj.toISOString().split("T")[0];
+    const targetDateStr = formatLocalDate(targetDateObj);
 
     return activeAccount.transactions
       .filter((tx: any) => tx.dueDate && !tx.isCompleted && tx.dueDate <= targetDateStr)

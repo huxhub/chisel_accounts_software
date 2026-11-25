@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "../../services/config";
 import type { AttachedDoc } from "../types";
+import { formatLocalDate } from "../types";
 
 export interface HistoryTransaction {
   id: string;
@@ -79,7 +80,7 @@ function computePresetDates(preset: HistoryFilters["preset"]): { startDate: stri
   if (preset === "all") return { startDate: "", endDate: "" };
 
   const now = new Date();
-  const todayStr = now.toISOString().split("T")[0];
+  const todayStr = formatLocalDate(now);
 
   if (preset === "today") {
     return { startDate: todayStr, endDate: todayStr };
@@ -88,12 +89,11 @@ function computePresetDates(preset: HistoryFilters["preset"]): { startDate: stri
   if (preset === "this_week") {
     const day = now.getDay();
     const diffToMon = now.getDate() - day + (day === 0 ? -6 : 1);
-    const mon = new Date(now.setDate(diffToMon));
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 6);
+    const mon = new Date(now.getFullYear(), now.getMonth(), diffToMon);
+    const sun = new Date(now.getFullYear(), now.getMonth(), diffToMon + 6);
     return {
-      startDate: mon.toISOString().split("T")[0],
-      endDate: sun.toISOString().split("T")[0],
+      startDate: formatLocalDate(mon),
+      endDate: formatLocalDate(sun),
     };
   }
 
@@ -103,8 +103,8 @@ function computePresetDates(preset: HistoryFilters["preset"]): { startDate: stri
     const first = new Date(y, m, 1);
     const last = new Date(y, m + 1, 0);
     return {
-      startDate: first.toISOString().split("T")[0],
-      endDate: last.toISOString().split("T")[0],
+      startDate: formatLocalDate(first),
+      endDate: formatLocalDate(last),
     };
   }
 
@@ -115,8 +115,8 @@ function computePresetDates(preset: HistoryFilters["preset"]): { startDate: stri
     const first = new Date(y, qStartMonth, 1);
     const last = new Date(y, qStartMonth + 3, 0);
     return {
-      startDate: first.toISOString().split("T")[0],
-      endDate: last.toISOString().split("T")[0],
+      startDate: formatLocalDate(first),
+      endDate: formatLocalDate(last),
     };
   }
 

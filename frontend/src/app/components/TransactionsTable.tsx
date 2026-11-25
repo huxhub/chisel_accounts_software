@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Image, FileText, Trash2, Edit3, BarChart3, Tag, Search, Filter, X } from "lucide-react";
 import type { Account, AttachedDoc, Program } from "../types";
-import { fmt, calcBalance, calcTotalCredit } from "../types";
+import { fmt, calcBalance, calcTotalCredit, calcTotalDebit } from "../types";
 import { Pagination } from "./ui/pagination";
 
 export function TransactionsTable({
@@ -25,10 +25,11 @@ export function TransactionsTable({
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "credit" | "debit">("all");
   const [programFilter, setProgramFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   const pageSize = 10;
 
-  const hasFilters = Boolean(searchQuery || typeFilter !== "all" || programFilter);
+  const hasFilters = Boolean(searchQuery || typeFilter !== "all" || programFilter || sortOrder !== "asc");
 
   const filteredTransactions = useMemo(() => {
     return normalTransactions.filter((tx: any) => {
@@ -49,11 +50,16 @@ export function TransactionsTable({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeAccount.id, filteredTransactions.length, searchQuery, typeFilter, programFilter]);
+  }, [activeAccount.id, filteredTransactions.length, searchQuery, typeFilter, programFilter, sortOrder]);
 
-  const totalPages = Math.ceil(filteredTransactions.length / pageSize);
-  const reversedTxs = [...filteredTransactions].reverse();
-  const paginatedTxs = reversedTxs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const sortedTxs = useMemo(() => {
+    return sortOrder === "desc"
+      ? [...filteredTransactions].reverse()
+      : filteredTransactions;
+  }, [filteredTransactions, sortOrder]);
+
+  const totalPages = Math.ceil(sortedTxs.length / pageSize);
+  const paginatedTxs = sortedTxs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="bg-white rounded-xl border border-border overflow-hidden space-y-0">
@@ -67,7 +73,7 @@ export function TransactionsTable({
           <div className="flex items-center gap-3">
             {hasFilters && (
               <button
-                onClick={() => { setSearchQuery(""); setTypeFilter("all"); setProgramFilter(""); }}
+                onClick={() => { setSearchQuery(""); setTypeFilter("all"); setProgramFilter(""); setSortOrder("asc"); }}
                 className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors"
               >
                 <X size={13} /> Clear Filters
@@ -79,7 +85,7 @@ export function TransactionsTable({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-2.5 pt-1">
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
@@ -113,6 +119,14 @@ export function TransactionsTable({
           ) : (
             <div />
           )}
+          <select
+            value={sortOrder}
+            onChange={e => setSortOrder(e.target.value as any)}
+            className="w-full px-3 py-1.5 text-xs border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all font-medium"
+          >
+            <option value="asc">Statement Order (Oldest First)</option>
+            <option value="desc">Newest First</option>
+          </select>
         </div>
       </div>
 
@@ -131,7 +145,7 @@ export function TransactionsTable({
         <>
           {/* Mobile View */}
           <div className="md:hidden flex flex-col divide-y divide-border/60">
-            {currentPage === 1 && (
+            {sortOrder === "asc" && currentPage === 1 && (
               <div className="px-5 py-3 bg-blue-50/30 flex justify-between items-center">
                 <span className="text-sm font-semibold text-muted-foreground">Opening Balance</span>
                 <span className="font-mono font-bold text-sm text-foreground">{fmt(activeAccount.openingBalance)}</span>
@@ -186,6 +200,13 @@ export function TransactionsTable({
               </div>
             ))}
 
+            {sortOrder === "desc" && currentPage === totalPages && (
+              <div className="px-5 py-3 bg-blue-50/30 flex justify-between items-center">
+                <span className="text-sm font-semibold text-muted-foreground">Opening Balance (Account Start)</span>
+                <span className="font-mono font-bold text-sm text-foreground">{fmt(activeAccount.openingBalance)}</span>
+              </div>
+            )}
+
             <div className="px-5 py-4 flex justify-between items-center" style={{ backgroundColor: activeAccount.bgColor }}>
               <span className="text-sm font-bold" style={{ color: activeAccount.color }}>Closing Balance</span>
               <div className="text-right">
@@ -215,12 +236,14 @@ export function TransactionsTable({
                 </tr>
               </thead>
               <tbody>
-                <tr className="bg-blue-50/50 border-b border-border">
-                  <td className="px-4 py-2 text-center font-mono text-xs text-muted-foreground">—</td>
-                  <td colSpan={7} className="px-4 py-2 text-xs text-muted-foreground font-semibold">Opening Balance</td>
-                  <td className="px-4 py-2 text-right font-mono text-xs font-bold text-foreground">{fmt(activeAccount.openingBalance)}</td>
-                  <td></td>
-                </tr>
+                {sortOrder === "asc" && currentPage === 1 && (
+                  <tr className="bg-blue-50/50 border-b border-border">
+                    <td className="px-4 py-2 text-center font-mono text-xs text-muted-foreground">—</td>
+                    <td colSpan={7} className="px-4 py-2 text-xs text-muted-foreground font-semibold">Opening Balance</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs font-bold text-foreground">{fmt(activeAccount.openingBalance)}</td>
+                    <td></td>
+                  </tr>
+                )}
 
                 {paginatedTxs.map((tx: any, idx: number) => {
                   const globalIdx = (currentPage - 1) * pageSize + idx + 1;
@@ -287,9 +310,20 @@ export function TransactionsTable({
                   );
                 })}
 
+                {sortOrder === "desc" && currentPage === totalPages && (
+                  <tr className="bg-blue-50/50 border-b border-border">
+                    <td className="px-4 py-2 text-center font-mono text-xs text-muted-foreground">—</td>
+                    <td colSpan={7} className="px-4 py-2 text-xs text-muted-foreground font-semibold">Opening Balance (Account Start)</td>
+                    <td className="px-4 py-2 text-right font-mono text-xs font-bold text-foreground">{fmt(activeAccount.openingBalance)}</td>
+                    <td></td>
+                  </tr>
+                )}
+
                 <tr style={{ backgroundColor: activeAccount.bgColor }}>
-                  <td colSpan={7} className="px-4 py-3 text-xs font-bold" style={{ color: activeAccount.color }}>Closing Balance</td>
+                  <td className="px-4 py-3 text-center font-mono text-xs text-muted-foreground">—</td>
+                  <td colSpan={5} className="px-4 py-3 text-xs font-bold" style={{ color: activeAccount.color }}>Closing Balance</td>
                   <td className="px-4 py-3 text-right font-mono text-xs font-bold text-emerald-600">+{fmt(calcTotalCredit(activeAccount))}</td>
+                  <td className="px-4 py-3 text-right font-mono text-xs font-bold text-red-500">-{fmt(calcTotalDebit(activeAccount))}</td>
                   <td className="px-4 py-3 text-right font-mono text-sm font-bold" style={{ color: calcBalance(activeAccount) < 0 ? "#dc2626" : activeAccount.color }}>
                     {fmt(calcBalance(activeAccount))}
                   </td>

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { TrendingUp, TrendingDown, ChevronRight, ArrowUpRight, ArrowDownRight, Wallet, Activity, Tag, Bell, Check, Search, Filter, X, Package } from "lucide-react";
 import type { Account, Program } from "../types";
-import { calcBalance, calcTotalCredit, calcTotalDebit, fmtSign, accountTypeIcon, CHART_COLORS, fmt } from "../types";
+import { calcBalance, calcTotalCredit, calcTotalDebit, fmtSign, accountTypeIcon, CHART_COLORS, fmt, formatLocalDate } from "../types";
 import { DashboardTransfersLog } from "./DashboardTransfersLog";
 
 export function Dashboard({
@@ -12,7 +12,7 @@ export function Dashboard({
   onCompleteReminder,
 }: {
   accounts: Account[];
-  inventoryItems?: Array<{ id: number; name: string; transactions?: Array<{ amount: string | number; paymentStatus: "paid" | "not_paid" }> }>;
+  inventoryItems?: Array<{ id: number; name: string; transactions?: Array<{ amount: string | number; paidAmount?: string | number; paymentStatus: "paid" | "not_paid" | "partial" }> }>;
   programs?: Program[];
   onNavigate: (id: string) => void;
   onCompleteReminder?: (accountId: string, txId: string) => void;
@@ -35,8 +35,17 @@ export function Dashboard({
           entry = { id: tx.id, date: tx.date, amount: tx.amount, reference: tx.reference, dueDate: tx.dueDate, exchangeType: tx.exchangeType, description: tx.description, fromCompany: "", fromColor: "", toCompany: "", toColor: "", createdAt: tx.createdAt };
           map.set(tx.reference, entry);
         }
-        if (tx.type === "debit") { entry.fromCompany = a.name; entry.fromColor = color; }
-        else if (tx.type === "credit") { entry.toCompany = a.name; entry.toColor = color; }
+        if (tx.type === "debit") {
+          if (!entry.fromCompany || a.type === "company") {
+            entry.fromCompany = a.name;
+            entry.fromColor = color;
+          }
+        } else if (tx.type === "credit") {
+          if (!entry.toCompany || a.type === "company") {
+            entry.toCompany = a.name;
+            entry.toColor = color;
+          }
+        }
       });
     });
     return Array.from(map.values()).sort((a, b) => {
@@ -52,7 +61,7 @@ export function Dashboard({
     todayObj.setHours(0, 0, 0, 0);
     const targetDateObj = new Date(todayObj);
     targetDateObj.setDate(targetDateObj.getDate() + 5);
-    const targetDateStr = targetDateObj.toISOString().split("T")[0];
+    const targetDateStr = formatLocalDate(targetDateObj);
 
     const list: any[] = [];
     const seenRefs = new Set<string>();
@@ -97,6 +106,7 @@ export function Dashboard({
 
     accounts.forEach(acc => {
       (acc.transactions || []).forEach((tx: any) => {
+        if (tx.isReminder) return;
         if (tx.programId && map.has(Number(tx.programId))) {
           const item = map.get(Number(tx.programId))!;
           item.count += 1;
@@ -157,7 +167,7 @@ export function Dashboard({
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {upcomingReminders.map(rem => {
-              const todayStr = new Date().toISOString().split("T")[0];
+              const todayStr = formatLocalDate();
               const isOverdue = rem.dueDate < todayStr;
               const isDueToday = rem.dueDate === todayStr;
               const diffTime = new Date(rem.dueDate).getTime() - new Date(todayStr).getTime();
@@ -250,8 +260,14 @@ export function Dashboard({
           {inventoryItems.map(item => {
             const transactions = item.transactions || [];
             const totalAmount = transactions.reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-            const paidAmount = transactions.filter(tx => tx.paymentStatus === "paid").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-            const pendingBalance = transactions.filter(tx => tx.paymentStatus === "not_paid").reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
+            const paidAmount = transactions.reduce(
+              (sum, tx) => sum + Number(tx.paidAmount ?? (tx.paymentStatus === "paid" ? tx.amount : 0)),
+              0,
+            );
+            const pendingBalance = transactions.reduce(
+              (sum, tx) => sum + Math.max(0, Number(tx.amount || 0) - Number(tx.paidAmount ?? (tx.paymentStatus === "paid" ? tx.amount : 0))),
+              0,
+            );
             const paidCount = transactions.filter(tx => tx.paymentStatus === "paid").length;
             const unpaidCount = transactions.length - paidCount;
             return <button key={item.id} onClick={() => onNavigate(`inventory-${item.id}`)} className="group rounded-xl border border-blue-100 bg-white p-4 text-left transition-colors hover:border-blue-200">

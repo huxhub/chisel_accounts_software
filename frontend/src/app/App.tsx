@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useAccountsController } from "../controllers/useAccountsController";
 
@@ -51,12 +51,27 @@ export default function App() {
     deleteLedger,
     addVoucher,
     deleteVoucher,
+    fetchAccounts,
   } = useAccountsController(isAuthenticated);
   const { settings, setSettings, tempSettings, setTempSettings, showSettings, setShowSettings } = useSettings();
 
   const [inventoryItems, setInventoryItems] = useState<Item[]>([]);
   const [inventoryOpen, setInventoryOpen] = useState(false);
-  const refreshInventory = () => inventoryRequest().then(setInventoryItems).catch(() => {});
+  const [inventoryLoading, setInventoryLoading] = useState(true);
+  const [inventoryError, setInventoryError] = useState("");
+  const refreshInventory = async () => {
+    setInventoryLoading(true);
+    setInventoryError("");
+    try {
+      const data = await inventoryRequest();
+      setInventoryItems(data);
+      await fetchAccounts();
+    } catch (error) {
+      setInventoryError(error instanceof Error ? error.message : "Unable to load inventory.");
+    } finally {
+      setInventoryLoading(false);
+    }
+  };
   const deleteInventoryCompany = async (id: number) => {
     try {
       await inventoryRequest(`/${id}`, { method: "DELETE" });
@@ -68,29 +83,14 @@ export default function App() {
       throw error;
     }
   };
-  useEffect(() => { if (isAuthenticated) refreshInventory(); else setInventoryItems([]); }, [isAuthenticated]);
-  const accountsWithInventory = useMemo(() => [
-    ...accounts,
-    ...inventoryItems.map(item => ({
-      id: `inventory-${item.id}`,
-      name: item.name,
-      type: "company" as const,
-      openingBalance: 0,
-      color: "#1d4ed8",
-      bgColor: "#eff6ff",
-      createdAt: undefined,
-      transactions: (item.transactions || []).map(tx => ({
-        id: `inventory-${item.id}-${tx.id}`,
-        date: tx.createdAt ? String(tx.createdAt).slice(0, 10) : new Date().toISOString().slice(0, 10),
-        description: `${tx.name} · ${tx.quantity} · ${tx.paymentStatus === "paid" ? "Paid" : "Not paid"}`,
-        type: "debit" as const,
-        amount: Number(tx.amount || 0),
-        reference: `Inventory #${tx.id}`,
-        accountId: `inventory-${item.id}`,
-      })),
-    })),
-  ], [accounts, inventoryItems]);
-
+  useEffect(() => {
+    if (isAuthenticated) refreshInventory();
+    else {
+      setInventoryItems([]);
+      setInventoryLoading(false);
+      setInventoryError("");
+    }
+  }, [isAuthenticated]);
   const [activeTab, setActiveTab] = useState<string>(() => sessionStorage.getItem("golden-catch-active-page") || "dashboard");
   useEffect(() => {
     sessionStorage.setItem("golden-catch-active-page", activeTab);
@@ -148,7 +148,7 @@ export default function App() {
     return (
       <>
         <Toaster richColors position="top-right" closeButton />
-        <Login settings={settings} onLogin={() => setIsAuthenticated(true)} />
+        <Login settings={settings} onLogin={() => { setInventoryLoading(true); setIsAuthenticated(true); }} />
       </>
     );
   }
@@ -192,13 +192,28 @@ export default function App() {
           {loading ? (
             activeTab === "dashboard" ? <DashboardSkeleton /> : <AccountDetailsSkeleton />
           ) : activeTab === "dashboard" ? (
-            <Dashboard accounts={accountsWithInventory} inventoryItems={inventoryItems} programs={programs} onNavigate={setActiveTab} onCompleteReminder={promptCompleteReminder} />
+            <Dashboard accounts={accounts} inventoryItems={inventoryItems} programs={programs} onNavigate={setActiveTab} onCompleteReminder={promptCompleteReminder} />
           ) : activeTab === "history" ? (
-            <HistoryPage accounts={accountsWithInventory} programs={programs} onViewDoc={doc => setViewDoc(doc)} />
+            <HistoryPage accounts={accounts} programs={programs} onViewDoc={doc => setViewDoc(doc)} />
           ) : activeTab === "reminders" ? (
             <RemindersPage accounts={accounts} onNavigate={setActiveTab} onAddTransaction={handleAddTx} onDeleteTransaction={txForm.deleteTransaction} onCompleteReminder={promptCompleteReminder} />
           ) : typeof activeTab === "string" && activeTab.startsWith("inventory-") ? (
-            inventoryItems.find(item => `inventory-${item.id}` === activeTab) ? <InventoryDetail item={inventoryItems.find(item => `inventory-${item.id}` === activeTab)!} onTransactionsChanged={refreshInventory} onDeleteCompany={() => deleteInventoryCompany(inventoryItems.find(item => `inventory-${item.id}` === activeTab)!.id)} /> : null
+            inventoryLoading ? (
+              <AccountDetailsSkeleton />
+            ) : inventoryItems.find(item => `inventory-${item.id}` === activeTab) ? (
+              <InventoryDetail item={inventoryItems.find(item => `inventory-${item.id}` === activeTab)!} accounts={accounts.filter(account => account.type === "company")} onTransactionsChanged={refreshInventory} onDeleteCompany={() => deleteInventoryCompany(inventoryItems.find(item => `inventory-${item.id}` === activeTab)!.id)} />
+            ) : (
+              <div className="flex min-h-full items-center justify-center bg-slate-50 p-6">
+                <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center">
+                  <h2 className="text-lg font-bold text-slate-900">Inventory page unavailable</h2>
+                  <p className="mt-2 text-sm text-slate-600">{inventoryError || "This inventory company no longer exists."}</p>
+                  <div className="mt-5 flex justify-center gap-3">
+                    {inventoryError && <button type="button" onClick={refreshInventory} className="min-h-11 rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">Try again</button>}
+                    <button type="button" onClick={() => setActiveTab("dashboard")} className="min-h-11 rounded-lg bg-primary px-4 text-sm font-semibold text-white">Go to dashboard</button>
+                  </div>
+                </div>
+              </div>
+            )
           ) : activeTab === "ledgers" || activeTab === "vendors" ? (
             <LedgersPage
               ledgers={ledgers}
@@ -247,7 +262,7 @@ export default function App() {
       </div>
 
       <AddInventoryDialog open={inventoryOpen} setOpen={setInventoryOpen} onItemsChanged={refreshInventory} />
-      <ReportModal accounts={accountsWithInventory} programs={programs} showReport={showReport} setShowReport={setShowReport} />
+      <ReportModal accounts={accounts} programs={programs} showReport={showReport} setShowReport={setShowReport} />
       <DocumentViewerModal viewDoc={viewDoc} setViewDoc={setViewDoc} />
       <AddAccountModal showAddCompany={accDetail.showAddCompany} setShowAddCompany={accDetail.setShowAddCompany} companyForm={accDetail.companyForm} setCompanyForm={accDetail.setCompanyForm} addCompany={accDetail.addCompany} />
       <AddTransactionModal showForm={txForm.showForm} setShowForm={txForm.setShowForm} activeAccount={accDetail.activeAccount} accounts={accounts} programs={programs} form={txForm.form} setForm={txForm.setForm} fileInputRef={txForm.fileInputRef} handleFileSelect={txForm.handleFileSelect} addTransaction={txForm.addTransaction} editingTxId={txForm.editingTxId} />
