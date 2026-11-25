@@ -23,6 +23,15 @@ const ensureLinkedCompany = async linkedAccountId => {
 const syncAccountMovement = async inventoryTransaction => {
   const reference = inventoryReference(inventoryTransaction.id);
   const existing = await Transaction.findOne({ where: { reference } });
+
+  // Sales are handled exclusively by the standalone Sales module. Remove any
+  // legacy company credits generated from inventory sales so refreshes cannot
+  // recreate deleted INVENTORY-* credit entries.
+  if (inventoryTransaction.transactionType === 'sale') {
+    if (existing) await existing.destroy();
+    return;
+  }
+
   const paidAmount = Number(inventoryTransaction.paidAmount || 0);
   const accountId = inventoryTransaction.linkedAccountId ? Number(inventoryTransaction.linkedAccountId) : null;
 
@@ -36,13 +45,12 @@ const syncAccountMovement = async inventoryTransaction => {
     if (existing) await existing.destroy();
     return;
   }
-  const isSale = inventoryTransaction.transactionType === 'sale';
   const values = {
     accountId: account.id,
     companyName: account.name,
     date: formatIndiaDate(inventoryTransaction.createdAt || Date.now()),
-    description: isSale ? `Sale received: ${inventoryTransaction.name}` : `Inventory purchase: ${inventoryTransaction.name}`,
-    type: isSale ? 'credit' : 'debit',
+    description: `Inventory purchase: ${inventoryTransaction.name}`,
+    type: 'debit',
     amount: paidAmount,
     reference,
     vendorOrCustomerName: inventoryTransaction.partyName || null,
